@@ -11,6 +11,8 @@
 
 #include <curl/curl.h>
 
+#include "json.h"
+
 /*
  * In FulGaz a route record is a JSON object with the
  * following structure:
@@ -83,18 +85,21 @@ typedef enum VidRes {
     res4K = 3,
 } VidRes;
 
+typedef enum OsTyp {
+    unk = 0,
+    macOS = 1,
+    windows = 2,
+} OsTyp;
+
 typedef struct CmdArgs {
     const char *contributor;
     const char *country;
+    const char *title;
     OutFmt outFmt;
     VidRes vidRes;
     int getVideo;
+    int dlProg;
 } CmdArgs;
-
-typedef struct JsonObject {
-    char *start;    // points to the left curly brace where the record starts
-    char *end;      // points to the right curly brace where the record ends
-} JsonObject;
 
 typedef struct RouteInfo {
 	TAILQ_ENTRY(RouteInfo) tqEntry;
@@ -162,165 +167,6 @@ static char *stristr(const char *s1, const char *s2 )
     return (*p2 == 0) ? (char *) r : NULL;
 }
 
-// Create a null-terminated string with the characters
-// between 'start' and 'end' inclusive.
-static char *stringify(const char *start, const char *end)
-{
-    char *str;
-    size_t len = end - start + 1;
-
-    if ((str = malloc(len+1)) != NULL) {
-        memcpy(str, start, len);
-        str[len] = '\0';
-    }
-
-    return str;
-}
-
-#if 0
-static void dumpText(const char *data, size_t dataLen)
-{
-	const char *pEnd = data + dataLen;
-    for (const char *p = data; p <= pEnd; p++) {
-        fputc(*p, stdout);
-    }
-    fputc('\n', stdout);
-    fflush(stdout);
-}
-
-static void jsonDumpObject(const JsonObject *pObj)
-{
-	dumpText(pObj->start, (pObj->end - pObj->start));
-}
-#endif
-
-// Locate the specified tag within the given JSON object and
-// return a pointer to its value: e.g.
-//
-//   { ..., <tag> : <value>, ... }
-//
-static const char *jsonFindTag(const JsonObject *pObj, const char *tag)
-{
-    char label[256];
-    size_t len;
-
-    snprintf(label, sizeof (label), "\"%s\"", tag);
-    len = strlen(label);
-    for (const char *p = (pObj->start + 1); p < pObj->end; p++) {
-    	if (memcmp(p, label, len) == 0) {
-    		for (p += len; p < pObj->end; p++) {
-    			int c = *p;
-    			if (isspace(c) || (c == ':'))
-    				continue;
-    			return p;
-    		}
-    	}
-    }
-
-    return NULL;
-}
-
-// Format is: "<tag>":"<val>" where the value is a string
-static int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal)
-{
-    const char *val;
-
-    if ((val = jsonFindTag(pObj, tag)) != NULL) {
-		const char *openQuotes = strchr(val, '"');
-		if (openQuotes != NULL) {
-			const char *endQuotes = strchr((openQuotes+1), '"');
-			if (endQuotes != NULL) {
-				char *str = stringify((openQuotes+1), (endQuotes - 1));
-				if (str != NULL) {
-					*pVal = str;
-					return 0;
-				}
-			}
-		}
-    }
-
-    return -1;
-}
-
-// Format is: "<tag>":[<ent0>,<ent1>,...,<entN>]
-static int jsonGetArrayValue(const JsonObject *pObj, const char *tag, char **pVal)
-{
-    const char *val;
-
-    if ((val = jsonFindTag(pObj, tag)) != NULL) {
-    	// Locate the left square bracket
-		const char *leftBracket = strchr(val, '[');
-		if (leftBracket != NULL) {
-	        // Locate the matching right square bracket
-			int level = 0;
-	        for (const char *p = leftBracket; p != pObj->end; p++) {
-	            if (*p == '[') {
-	                level++;
-	            } else if (*p == ']') {
-	                level--;
-	            }
-	            if (level == 0) {
-	            	const char *rightBracket = p;
-					char *str = stringify(leftBracket, rightBracket);
-					if (str != NULL) {
-						*pVal = str;
-						return 0;
-					}
-	            }
-	        }
-		}
-    }
-
-    return -1;
-}
-
-// A JSON object consists of text enclosed within matching
-// curly braces: e.g.
-//
-//    {"user':"John Doe","age":"35","gender":"male"}
-//
-static int jsonFindObject(const char *data, size_t dataLen, JsonObject *pObj)
-{
-    // Locate the left curly brace
-    if ((pObj->start = strchr(data, '{')) != NULL) {
-        int level = 0;
-        const char *pEnd = data + dataLen;
-
-        // Locate the matching right curly brace which
-        // terminates the JSON object.
-        for (char *p = pObj->start; p != pEnd; p++) {
-            if (*p == '{') {
-                level++;
-            } else if (*p == '}') {
-                level--;
-            }
-            if (level == 0) {
-            	pObj->end = p;
-                return 0;
-            }
-        }
-    }
-
-    return -1;
-}
-
-// Search the current object for an embedded object with
-// the given tag: e.g.
-//
-//   { ..., "info":{"make":"Honda","model":"Civic","trim":"EX"}, ...}
-//
-static int jsonFindObjByTag(const JsonObject *pObj, const char *tag, JsonObject *pEmbObj)
-{
-    const char *lbl;
-
-    if ((lbl = jsonFindTag(pObj, tag)) != NULL) {
-    	size_t dataLen = (pObj->end - lbl);
-    	return jsonFindObject(lbl, dataLen, pEmbObj);
-    }
-
-    return -1;
-}
-
 static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
 {
     if ((pArgs->contributor != NULL) && (stristr(pInfo->contributor, pArgs->contributor) == NULL)) {
@@ -328,6 +174,10 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         return -1;
     }
     if ((pArgs->country != NULL) && (stristr(pInfo->location, pArgs->country) == NULL)) {
+        // Ignore this ride...
+        return -1;
+    }
+    if ((pArgs->title != NULL) && (stristr(pInfo->title, pArgs->title) == NULL)) {
         // Ignore this ride...
         return -1;
     }
@@ -583,46 +433,123 @@ static void printHyperlinkCellValue(const char *string)
 
 static void printHttpOutput(const RouteDB *pDb)
 {
-	RouteInfo *pRoute;
+    RouteInfo *pRoute;
 
-	printf("<html>\n");
-	printf("    <head>\n");
-	printf("        <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\"/>\n");
-	printf("        <title>FulGaz Route Library</title>\n");
+    printf("<html>\n");
+    printf("    <head>\n");
+    printf("        <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\"/>\n");
+    printf("        <title>FulGaz Route Library</title>\n");
     printf("    </head>\n");
-	printf("    <body lang=\"en-US\" link=\"#000080\" vlink=\"#800000\" dir=\"ltr\">\n");
-	printf("        <table width=\"100%%\" cellpadding=\"4\" cellspacing=\"0\">\n");
-	for (int n = 0; cellName[n] != NULL; n++) {
-		printf("            <col width=\"26*\"/>\n");
-	}
-	printf("            <tr valign=\"top\">\n");
-	for (int n = 0; cellName[n] != NULL; n++) {
-		printStringCellValue(cellName[n], 1);
-	}
-	printf("            </tr>\n");
-	TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
-		char link[256];
-		printf("            <tr valign=\"top\">\n");
-		printStringCellValue(fmtTitle(pRoute->title), 0);
-		printStringCellValue(fmtCountry(pRoute->location), 0);
-		printStringCellValue(pRoute->contributor, 0);
-		printStringCellValue(pRoute->distance, 0);
-		printStringCellValue(pRoute->elevation, 0);
-		printStringCellValue(fmtTime(pRoute->time), 0);
-		printStringCellValue(pRoute->toughness, 0);
-		snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vim720);
-		printHyperlinkCellValue(link);
-		snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vim1080);
-		printHyperlinkCellValue(link);
-		snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vimMaster);
-		printHyperlinkCellValue(link);
-		snprintf(link, sizeof (link), "%s%s", shizUrlPfx, pRoute->shiz);
-		printHyperlinkCellValue(link);
-		printf("            </tr>\n");
-	}
-	printf("        </table>\n");
-	printf("    </body>\n");
-	printf("</html>\n");
+    printf("    <body lang=\"en-US\" link=\"#000080\" vlink=\"#800000\" dir=\"ltr\">\n");
+    printf("        <table width=\"100%%\" cellpadding=\"4\" cellspacing=\"0\">\n");
+    for (int n = 0; cellName[n] != NULL; n++) {
+        printf("            <col width=\"26*\"/>\n");
+    }
+    printf("            <tr valign=\"top\">\n");
+    for (int n = 0; cellName[n] != NULL; n++) {
+        printStringCellValue(cellName[n], 1);
+    }
+    printf("            </tr>\n");
+    TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
+        char link[256];
+        printf("            <tr valign=\"top\">\n");
+        printStringCellValue(fmtTitle(pRoute->title), 0);
+        printStringCellValue(fmtCountry(pRoute->location), 0);
+        printStringCellValue(pRoute->contributor, 0);
+        printStringCellValue(pRoute->distance, 0);
+        printStringCellValue(pRoute->elevation, 0);
+        printStringCellValue(fmtTime(pRoute->time), 0);
+        printStringCellValue(pRoute->toughness, 0);
+        snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vim720);
+        printHyperlinkCellValue(link);
+        snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vim1080);
+        printHyperlinkCellValue(link);
+        snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vimMaster);
+        printHyperlinkCellValue(link);
+        snprintf(link, sizeof (link), "%s%s", shizUrlPfx, pRoute->shiz);
+        printHyperlinkCellValue(link);
+        printf("            </tr>\n");
+    }
+    printf("        </table>\n");
+    printf("    </body>\n");
+    printf("</html>\n");
+}
+
+static size_t writeOutputFileData(void *ptr, size_t size, size_t nmemb, void *stream)
+{
+    size_t written = fwrite(ptr, size, nmemb, (FILE *) stream);
+    return written;
+}
+
+static int urlDownload(const char *url, const char *outFile, int dlProg)
+{
+    FILE *fp;
+    CURL *ch;
+
+    printf("Downloading: %s ....\n", url);
+
+    // If no outfile has been specified, use the URL's
+    // basename as the output file name.
+    if (outFile == NULL) {
+        if ((outFile = strrchr(url, '/')) == NULL) {
+            // Hu?
+            fprintf(stderr, "ERROR: can't figure out output file name\n");
+            return -1;
+        }
+        outFile++;  // skip the final '/'
+    }
+
+    // Open the output file
+    if ((fp = fopen(outFile, "wb")) == NULL) {
+        fprintf(stderr, "ERROR: can't open output file \"%s\" (%s)\n", outFile, strerror(errno));
+        return -1;
+    }
+
+    // Init the curl session
+    ch = curl_easy_init();
+
+    // Set URL to get here
+    curl_easy_setopt(ch, CURLOPT_URL, url);
+
+    // Set to 1L to enable full debug
+    curl_easy_setopt(ch, CURLOPT_VERBOSE, 0L);
+
+    // Set to 0L to enable download progress meter
+    curl_easy_setopt(ch, CURLOPT_NOPROGRESS, (dlProg) ? 0L : 1L);
+
+    // Send all data to this function
+    curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, writeOutputFileData);
+
+    // Write the page body to this file handle */
+    curl_easy_setopt(ch, CURLOPT_WRITEDATA, fp);
+
+    // Go fetch!
+    curl_easy_perform(ch);
+
+    // Cleanup curl stuff
+    curl_easy_cleanup(ch);
+
+    // Close the output file
+    fclose(fp);
+
+    return 0;
+}
+
+static void getVideoFiles(const RouteDB *pDb, const CmdArgs *pArgs)
+{
+    RouteInfo *pRoute;
+
+    TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
+        char url[256];
+        if (pArgs->vidRes == res720p) {
+            snprintf(url, sizeof (url), "%s%s", pDb->mp4UrlPfx, pRoute->vim720);
+        } else if (pArgs->vidRes == res1080p) {
+            snprintf(url, sizeof (url), "%s%s", pDb->mp4UrlPfx, pRoute->vim1080);
+        } else {
+            snprintf(url, sizeof (url), "%s%s", pDb->mp4UrlPfx, pRoute->vimMaster);
+        }
+        urlDownload(url, NULL, pArgs->dlProg);
+    }
 }
 
 static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
@@ -668,18 +595,20 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 		} else if (pArgs->outFmt == html) {
 		    printHttpOutput(&routeDb);
         }
+
+		// If requested, download the MP4 video files
+		if (pArgs->getVideo) {
+		    getVideoFiles(&routeDb, pArgs);
+		}
 	}
 
 	return 0;
 }
 
 // Locate the BizarMobile.FulGaz_xxxx install direcotry
-static char *getBizarMobilePath(void)
+static char *getBizarMobilePath(OsTyp osTyp)
 {
     char *userName;
-    DIR *dirp;
-    struct dirent *dp;
-    char packagesDir[80];
     static char appInstDir[512];
 
     // Figure out our user name
@@ -688,48 +617,64 @@ static char *getBizarMobilePath(void)
         return NULL;
     }
 
-    // Full path to the Packages directory
-    snprintf(packagesDir, sizeof (packagesDir), "/cygdrive/c/Users/%s/AppData/Local/Packages", userName);
-    if ((dirp = opendir(packagesDir)) != NULL) {
-        do {
-            const char *bizarMobile = "BizarMobile.FulGaz";
-            size_t len = strlen(bizarMobile);
-
-            if ((dp = readdir(dirp)) != NULL) {
-                if (strncmp(dp->d_name, bizarMobile, len) == 0) {
-                    // Found it!
-                    snprintf(appInstDir, sizeof (appInstDir), "%s/%s/", packagesDir, dp->d_name);
-                    return appInstDir;
-                }
-            }
-        } while (dp != NULL);
+    if (osTyp == macOS) {
+        snprintf(appInstDir, sizeof (appInstDir), "/Users/%s/Library/Containers/com.bizarmobile.fulgaz/", userName);
+        return appInstDir;
     } else {
-        fprintf(stderr, "ERROR: can't open directory \"%s\" (%s)\n", packagesDir, strerror(errno));
+        char packagesDir[80];
+        DIR *dirp;
+
+        // Full path to the Packages directory
+        snprintf(packagesDir, sizeof (packagesDir), "/cygdrive/c/Users/%s/AppData/Local/Packages", userName);
+        if ((dirp = opendir(packagesDir)) != NULL) {
+            struct dirent *dp;
+            do {
+                const char *bizarMobile = "BizarMobile.FulGaz";
+                size_t len = strlen(bizarMobile);
+
+                if ((dp = readdir(dirp)) != NULL) {
+                    if (strncmp(dp->d_name, bizarMobile, len) == 0) {
+                        // Found it!
+                        snprintf(appInstDir, sizeof (appInstDir), "%s/%s/", packagesDir, dp->d_name);
+                        return appInstDir;
+                    }
+                }
+            } while (dp != NULL);
+        } else {
+            fprintf(stderr, "ERROR: can't open directory \"%s\" (%s)\n", packagesDir, strerror(errno));
+        }
     }
 
     return NULL;
 }
 
-static char *getFilePath(const char *appInstDir)
+static char *getFilePath(const char *appInstDir, OsTyp osTyp)
 {
     static char filePath[1024];
     const char *fileName = "allrides_v4.json";
     struct stat stBuf = {0};
 
-    // The path to the allrides_v4.json file depends
-    // on the version of the app being used; e.g.
-    // FulGaz version 4.2.x:  appInstDir/LocalState/allrides_v4.json
-    // FulGaz version 4.50.x: appInstDir/LocalCache/Local/FulGaz/allrides_v4.json
+    // The path to the allrides_v4.json file depends on
+    // the OS and the version of the app being used...
 
-    // Try 4.50.x ...
-    snprintf(filePath, sizeof (filePath), "%sLocalCache/Local/FulGaz/%s", appInstDir, fileName);
-    if ((stat(filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode))
+    if (osTyp == macOS) {
+        snprintf(filePath, sizeof (filePath), "%sData/Library/Application Support/FulGaz/%s", appInstDir, fileName);
         return filePath;
+    } else {
+        // Windows app version 4.2.x:  appInstDir/LocalState/allrides_v4.json
+        // Windows app version 4.50.x: appInstDir/LocalCache/Local/FulGaz/allrides_v4.json
+        // macOS app version x.x.x: /Users/mmourier/Library/Containers/com.bizarmobile.fulgaz/Data/Library/Application Support/FulGaz/allrides_v4.json
 
-    // Try 4.2.x ...
-    snprintf(filePath, sizeof (filePath), "%sLocalState/%s", appInstDir, fileName);
-    if ((stat(filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode))
-        return filePath;
+        // Try 4.50.x ...
+        snprintf(filePath, sizeof (filePath), "%sLocalCache/Local/FulGaz/%s", appInstDir, fileName);
+        if ((stat(filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode))
+            return filePath;
+
+        // Try 4.2.x ...
+        snprintf(filePath, sizeof (filePath), "%sLocalState/%s", appInstDir, fileName);
+        if ((stat(filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode))
+            return filePath;
+    }
 
     return NULL;
 }
@@ -752,12 +697,19 @@ static const char *help =
         "        Only include rides from the specified country. The name match is \n"
         "        case-insensitive and liberal: e.g. specifying \"aus\" will match \n"
         "        all rides from \"Australia\" and from \"Austria\".\n"
+        "    --download-progress\n"
+        "        Show video download progress info.\n"
         "    --get-video\n"
         "        Download the MP4 video file of the ride.\n"
         "    --help\n"
         "        Show this help and exit.\n"
         "    --output-format {csv|html}\n"
         "        Specifies the format of the output file.\n"
+        "    --title <name>\n"
+        "        Only include rides that have <name> in their title. The name\n"
+        "        match is case-insensitive and liberal: e.g. specifying \"gavia\"\n"
+        "        will match the rides \"Passo di Gavia\", \"Passo di Gavia Sweet\n"
+        "        Spot\", and \"Passo di Gavia from Ponte di Legno\".\n"
         "    --video-resolution {720|1080|4k}\n"
         "        Only include rides with video at the specified resolution.\n"
         "\n";
@@ -775,11 +727,13 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         if (strcmp(arg, "--help") == 0) {
             fprintf(stdout, "%s\n", help);
             exit(0);
-        }  else if (strcmp(arg, "--contributor") == 0) {
+        } else if (strcmp(arg, "--contributor") == 0) {
             pArgs->contributor = argv[++n];
-        }  else if (strcmp(arg, "--country") == 0) {
+        } else if (strcmp(arg, "--country") == 0) {
             pArgs->country = argv[++n];
-        }  else if (strcmp(arg, "--get-video") == 0) {
+        } else if (strcmp(arg, "--download-progress") == 0) {
+            pArgs->dlProg = 1;
+        } else if (strcmp(arg, "--get-video") == 0) {
             pArgs->getVideo = 1;
         } else if (strcmp(arg, "--output-format") == 0) {
             val = argv[++n];
@@ -797,16 +751,24 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
                 pArgs->vidRes = res720p;
             } else if (strcmp(val, "1080") == 0) {
                 pArgs->vidRes = res1080p;
-            } else if (strcmp(val, "4k") == 0) {
+            } else if ((strcmp(val, "4k") == 0) ||
+                       (strcmp(val, "4K") == 0)) {
                 pArgs->vidRes = res4K;
             } else {
                 fprintf(stderr, "Invalid video resolution: %s\n", val);
                 return -1;
             }
+        } else if (strcmp(arg, "--title") == 0) {
+            pArgs->title = argv[++n];
         } else {
             fprintf(stderr, "Invalid option: %s\n", arg);
             return -1;
         }
+    }
+
+    if (pArgs->getVideo && (pArgs->vidRes == 0)) {
+        // By default get the HD video
+        pArgs->vidRes = res1080p;
     }
 
     return 0;
@@ -815,6 +777,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
 int main(int argc, char *argv[])
 {
     CmdArgs cmdArgs = {0};
+    OsTyp osTyp = macOS;
 	char *appInstDir;
 	char *filePath;
     int fd;
@@ -829,14 +792,19 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // Figure out the OS type
+    if (getenv("WINDIR") != NULL) {
+        osTyp = windows;
+    }
+
     // Figure out the install directory of the app
-    if ((appInstDir = getBizarMobilePath()) == NULL) {
+    if ((appInstDir = getBizarMobilePath(osTyp)) == NULL) {
         fprintf(stderr, "ERROR: can't determine app's install directory\n");
         return -1;
     }
 
     // Figure out the full path to the allrides_v4.json file
-    if ((filePath = getFilePath(appInstDir)) == NULL) {
+    if ((filePath = getFilePath(appInstDir, osTyp)) == NULL) {
         fprintf(stderr, "ERROR: can't get file path (%s)\n", strerror(errno));
         return -1;
     }
@@ -867,6 +835,8 @@ int main(int argc, char *argv[])
 
     close(fd);
 
+    curl_global_init(CURL_GLOBAL_ALL);
+
     // Locate the main JSON object
 	if (jsonFindObject(data, dataLen, &mainObj) != 0) {
 		fprintf(stderr, "ERROR: can't find main JSON object!\n");
@@ -879,6 +849,8 @@ int main(int argc, char *argv[])
 	procMainObj(&mainObj, &cmdArgs);
 
     free(data);
+
+    curl_global_cleanup();
 
     return 0;
 }
