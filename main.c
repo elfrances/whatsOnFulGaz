@@ -13,6 +13,8 @@
 
 #include "json.h"
 
+#define PROGRAM_VERSION "1.0"
+
 /*
  * In FulGaz a route record is a JSON object with the
  * following structure:
@@ -95,8 +97,10 @@ typedef struct CmdArgs {
     const char *contributor;
     const char *country;
     const char *title;
+    const char *dlFolder;
     OutFmt outFmt;
     VidRes vidRes;
+    int getShiz;
     int getVideo;
     int dlProg;
 } CmdArgs;
@@ -135,6 +139,7 @@ typedef struct RouteDB {
 // URL prefix for fetching the SHIZ file of a route
 const char *shizUrlPfx = "https://video.fulgaz.com/";
 
+// Cygwin doesn't have this one
 static char *stristr(const char *s1, const char *s2 )
 {
     const char *p1 = s1 ;
@@ -481,10 +486,12 @@ static size_t writeOutputFileData(void *ptr, size_t size, size_t nmemb, void *st
     return written;
 }
 
-static int urlDownload(const char *url, const char *outFile, int dlProg)
+static int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
 {
+    char filePath[512];
     FILE *fp;
     CURL *ch;
+    char errBuf[CURL_ERROR_SIZE];
 
     printf("Downloading: %s ....\n", url);
 
@@ -499,9 +506,16 @@ static int urlDownload(const char *url, const char *outFile, int dlProg)
         outFile++;  // skip the final '/'
     }
 
+    // Figure out the path to the output file
+    if (pArgs->dlFolder != NULL) {
+        snprintf(filePath, sizeof (filePath), "%s/%s", pArgs->dlFolder, outFile);
+    } else {
+        snprintf(filePath, sizeof (filePath), "%s", outFile);
+    }
+
     // Open the output file
-    if ((fp = fopen(outFile, "wb")) == NULL) {
-        fprintf(stderr, "ERROR: can't open output file \"%s\" (%s)\n", outFile, strerror(errno));
+    if ((fp = fopen(filePath, "wb")) == NULL) {
+        fprintf(stderr, "ERROR: can't open output file \"%s\" (%s)\n", filePath, strerror(errno));
         return -1;
     }
 
@@ -515,16 +529,22 @@ static int urlDownload(const char *url, const char *outFile, int dlProg)
     curl_easy_setopt(ch, CURLOPT_VERBOSE, 0L);
 
     // Set to 0L to enable download progress meter
-    curl_easy_setopt(ch, CURLOPT_NOPROGRESS, (dlProg) ? 0L : 1L);
+    curl_easy_setopt(ch, CURLOPT_NOPROGRESS, (pArgs->dlProg) ? 0L : 1L);
 
     // Send all data to this function
     curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, writeOutputFileData);
 
-    // Write the page body to this file handle */
+    // Write the page body to this file handle
     curl_easy_setopt(ch, CURLOPT_WRITEDATA, fp);
 
+    // Buffer where to store error message
+    curl_easy_setopt(ch, CURLOPT_ERRORBUFFER, errBuf);
+
     // Go fetch!
-    curl_easy_perform(ch);
+    if (curl_easy_perform(ch) != CURLE_OK) {
+        fprintf(stderr, "ERROR: file download failed (%s)\n", errBuf);
+        return -1;
+    }
 
     // Cleanup curl stuff
     curl_easy_cleanup(ch);
@@ -533,6 +553,17 @@ static int urlDownload(const char *url, const char *outFile, int dlProg)
     fclose(fp);
 
     return 0;
+}
+
+static void getShizFiles(const RouteDB *pDb, const CmdArgs *pArgs)
+{
+    RouteInfo *pRoute;
+
+    TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
+        char url[256];
+        snprintf(url, sizeof (url), "%s%s", shizUrlPfx, pRoute->shiz);
+        urlDownload(url, NULL, pArgs);
+    }
 }
 
 static void getVideoFiles(const RouteDB *pDb, const CmdArgs *pArgs)
@@ -548,7 +579,7 @@ static void getVideoFiles(const RouteDB *pDb, const CmdArgs *pArgs)
         } else {
             snprintf(url, sizeof (url), "%s%s", pDb->mp4UrlPfx, pRoute->vimMaster);
         }
-        urlDownload(url, NULL, pArgs->dlProg);
+        urlDownload(url, NULL, pArgs);
     }
 }
 
@@ -587,7 +618,7 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 			dataLen -= (pRouteObj->end - pRouteObj->start);
 		}
 
-		printf("numRoutes=%d\n", routeDb.numRoutes);
+		//printf("numRoutes=%d\n", routeDb.numRoutes);
 
 		// Create output file
 		if (pArgs->outFmt == csv) {
@@ -596,10 +627,15 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 		    printHttpOutput(&routeDb);
         }
 
-		// If requested, download the MP4 video files
-		if (pArgs->getVideo) {
-		    getVideoFiles(&routeDb, pArgs);
-		}
+        // If requested, download the SHIZ control files
+        if (pArgs->getShiz) {
+            getShizFiles(&routeDb, pArgs);
+        }
+
+        // If requested, download the MP4 video files
+        if (pArgs->getVideo) {
+            getVideoFiles(&routeDb, pArgs);
+        }
 	}
 
 	return 0;
@@ -612,7 +648,7 @@ static char *getBizarMobilePath(OsTyp osTyp)
     static char appInstDir[512];
 
     // Figure out our user name
-    if ((userName = getenv("USER")) == NULL) {
+    if ((userName = getenv("USERNAME")) == NULL) {
         fprintf(stderr, "ERROR: can't determine user name (%s)\n", strerror(errno));
         return NULL;
     }
@@ -697,8 +733,12 @@ static const char *help =
         "        Only include rides from the specified country. The name match is \n"
         "        case-insensitive and liberal: e.g. specifying \"aus\" will match \n"
         "        all rides from \"Australia\" and from \"Austria\".\n"
+        "    --download-folder <path>\n"
+        "        Specifies the folder where the downloaded files are stored.\n"
         "    --download-progress\n"
         "        Show video download progress info.\n"
+        "    --get-shiz\n"
+        "        Download the SHIZ control file of the ride.\n"
         "    --get-video\n"
         "        Download the MP4 video file of the ride.\n"
         "    --help\n"
@@ -710,6 +750,8 @@ static const char *help =
         "        match is case-insensitive and liberal: e.g. specifying \"gavia\"\n"
         "        will match the rides \"Passo di Gavia\", \"Passo di Gavia Sweet\n"
         "        Spot\", and \"Passo di Gavia from Ponte di Legno\".\n"
+        "    --version\n"
+        "        Show program's version info and exit.\n"
         "    --video-resolution {720|1080|4k}\n"
         "        Only include rides with video at the specified resolution.\n"
         "\n";
@@ -727,12 +769,19 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         if (strcmp(arg, "--help") == 0) {
             fprintf(stdout, "%s\n", help);
             exit(0);
+        } else if (strcmp(arg, "--version") == 0) {
+            fprintf(stdout, "Program version %s built on %s %s\n", PROGRAM_VERSION, __DATE__, __TIME__);
+            exit(0);
         } else if (strcmp(arg, "--contributor") == 0) {
             pArgs->contributor = argv[++n];
         } else if (strcmp(arg, "--country") == 0) {
             pArgs->country = argv[++n];
+        } else if (strcmp(arg, "--download-folder") == 0) {
+            pArgs->dlFolder = argv[++n];
         } else if (strcmp(arg, "--download-progress") == 0) {
             pArgs->dlProg = 1;
+        } else if (strcmp(arg, "--get-shiz") == 0) {
+            pArgs->getShiz = 1;
         } else if (strcmp(arg, "--get-video") == 0) {
             pArgs->getVideo = 1;
         } else if (strcmp(arg, "--output-format") == 0) {
@@ -762,6 +811,15 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             pArgs->title = argv[++n];
         } else {
             fprintf(stderr, "Invalid option: %s\n", arg);
+            return -1;
+        }
+    }
+
+    if (pArgs->dlFolder != NULL) {
+        // Make sure the download folder exists
+        struct stat stBuf = {0};
+        if ((stat(pArgs->dlFolder, &stBuf) != 0) || !S_ISDIR(stBuf.st_mode)) {
+            fprintf(stderr, "Invalid download folder: %s\n", pArgs->dlFolder);
             return -1;
         }
     }
@@ -809,7 +867,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    printf("Found rides file: %s\n", filePath);
+    //printf("Found rides file: %s\n", filePath);
 
     if ((fd = open(filePath, O_RDONLY, 0)) < 0) {
         fprintf(stderr, "ERROR: can't open file \"%s\" (%s)\n", filePath, strerror(errno));
