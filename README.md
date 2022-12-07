@@ -7,7 +7,7 @@ A simple command-line tool similar in functionality to the web applet https://wh
 
 3. It supports match filters to select rides that where filmed by a given contributor, in a given country, etc.
 
-4. It can automatically download the MP4 video file of all the matching rides, into a selected download folder.
+4. It can automatically download the MP4 video file or the SHIZ control file of all the matching rides, into a selected download folder.
 
 # Building the tool
 
@@ -81,7 +81,7 @@ $ ./whatsOnFulGaz.exe --output-format csv > AllRides.csv
 
 # Example 2
 
-Generate an HTML file with all rides that have a distance of up to 20 km and an elevation gain of up to 100 meters:
+Generate an HTML file with all rides that have a distance of up to 20 km and an elevation gain of up to 100 meters, and store it in the file EasyRides.html:
 
 ```
 $ ./whatsOnFulGaz.exe --output-format html --max-distance 20 --max-elevation-gain 100 > EasyRides.html
@@ -89,10 +89,31 @@ $ ./whatsOnFulGaz.exe --output-format html --max-distance 20 --max-elevation-gai
 
 # Example 3
 
-Download the 1080p video file of each of the rides filmed by Rob Bennett in France, and store them in the D:\FulGaz\Videos folder:
+Download the SHIZ control file of each of the rides filmed by Hans Peter Obwaller, and store them in the D:\FulGaz\Shiz folder:
 
 ```
-$ ./whatsOnFulGaz.exe --contributor bennett --country france --get-video 1080 --download-folder /cygdrive/d/FulGaz/Videos/
+$ ./whatsOnFulGaz.exe --contributor obwaller --get-shiz --download-folder /cygdrive/d/FulGaz/Shiz/
+Downloading: https://assets.fulgaz.com/Above-Uttendorf-working-seg.shiz ....
+Downloading: https://assets.fulgaz.com/Alpenverein.shiz ....
+Downloading: https://assets.fulgaz.com/Alpenvereinshutte-seg.shiz ....
+     .
+     .
+     .
+```
+
+# Example 4
+
+Download the 1080p video file of each of the rides filmed by Rob Bennett in France (showing the file download progress), and store them in the D:\FulGaz\Videos folder:
+
+```
+$ ./whatsOnFulGaz.exe --contributor bennett --country france --get-video 1080 --download-progress --download-folder /cygdrive/d/FulGaz/Videos/
+Downloading: https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Tour-De-France-2022-Stage-20-Rocamadour-Time-Trial.mp4 ....
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  3 4374M    3  170M    0     0  60.0M      0  0:01:12  0:00:02  0:01:10 60.0M
+     .
+     .
+     .
 ```
 
 

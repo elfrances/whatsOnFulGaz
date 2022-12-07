@@ -67,7 +67,7 @@
  * File structure:
  *
  * {
- * 		"result":"success",
+ * 	    "result":"success",
  *  	"prefix":"https://fulgaz.cachefly.net/file/fulgaz-videos/",
  *  	"data":[<rec1>,<rec2>,...<recN>]
  * }
@@ -138,7 +138,7 @@ typedef struct RouteDB {
 } RouteDB;
 
 // URL prefix for fetching the SHIZ file of a route
-const char *shizUrlPfx = "https://video.fulgaz.com/";
+const char *shizUrlPfx = "https://assets.fulgaz.com/";
 
 // Cygwin doesn't have this one
 static char *stristr(const char *s1, const char *s2 )
@@ -841,9 +841,10 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         }
     }
 
-    if ((pArgs->outFmt == undef) && (pArgs->getVideo == none)) {
+    if ((pArgs->outFmt == undef) && (pArgs->getVideo == none) && (pArgs->getShiz == 0)) {
         // Omitting the output file format is only
-        // allowed when downloading the video files
+        // allowed when downloading the video or
+        // the shiz files.
         fprintf(stderr, "INFO: Output file format not specified; using CSV by default.\n");
         pArgs->outFmt = csv;
     }
