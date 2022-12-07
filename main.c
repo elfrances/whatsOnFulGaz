@@ -78,6 +78,7 @@ typedef enum OutFmt {
     undef = 0,
     csv = 1,
     html = 2,
+    text = 3,
 } OutFmt;
 
 typedef enum VidRes {
@@ -94,6 +95,7 @@ typedef enum OsTyp {
 } OsTyp;
 
 typedef struct CmdArgs {
+    const char *category;
     const char *contributor;
     const char *country;
     const char *title;
@@ -477,6 +479,32 @@ static void printHttpOutput(const RouteDB *pDb)
     printf("</html>\n");
 }
 
+static void printTextOutput(const RouteDB *pDb)
+{
+    RouteInfo *pRoute;
+
+    TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
+        char link[256];
+        printf("{\n");
+        printf("    Name:            %s\n", fmtTitle(pRoute->title));
+        printf("    Country:         %s\n", fmtCountry(pRoute->location));
+        printf("    Contributor:     %s\n", pRoute->contributor);
+        printf("    Distance:        %s\n", pRoute->distance);
+        printf("    Elevation Gain:  %s\n", pRoute->elevation);
+        printf("    Duration:        %s\n", fmtTime(pRoute->time));
+        printf("    Toughness Score: %s\n", pRoute->toughness);
+        snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vim720);
+        printf("    720p Video:      %s\n", link);
+        snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vim1080);
+        printf("    1080p Video:     %s\n", link);
+        snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vimMaster);
+        printf("    4K Video:        %s\n", link);
+        snprintf(link, sizeof (link), "%s%s", shizUrlPfx, pRoute->shiz);
+        printf("    SHIZ:            %s\n", link);
+        printf("}\n");
+    }
+}
+
 static size_t writeOutputFileData(void *ptr, size_t size, size_t nmemb, void *stream)
 {
     size_t written = fwrite(ptr, size, nmemb, (FILE *) stream);
@@ -584,7 +612,7 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 {
 	RouteDB routeDb = {0};
 	char *result;
-	char *data;
+	JsonArray data = {0};
 
 	TAILQ_INIT(&routeDb.routeList);
 
@@ -598,12 +626,12 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 		return -1;
 	}
 
-	// Get the array of route objects
-	if (jsonGetArrayValue(pObj, "data", &data) == 0) {
+	// Get the "data":[] array of route objects
+	if (jsonFindArrayByTag(pObj, "data", &data) == 0) {
 		JsonObject routeObj = {0};
 		JsonObject *pRouteObj = &routeObj;
-		const char *pData = data;
-		size_t dataLen = strlen(data);
+		const char *pData = data.start;
+		size_t dataLen = data.end - data.start;
 
 		// Process each route object in the "data" array
 		while (jsonFindObject(pData, dataLen, pRouteObj) == 0) {
@@ -620,8 +648,10 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 		// Create output file
 		if (pArgs->outFmt == csv) {
 		    printCsvOutput(&routeDb);
-		} else if (pArgs->outFmt == html) {
-		    printHttpOutput(&routeDb);
+        } else if (pArgs->outFmt == html) {
+            printHttpOutput(&routeDb);
+        } else if (pArgs->outFmt == text) {
+            printTextOutput(&routeDb);
         }
 
         // If requested, download the SHIZ control files
@@ -696,12 +726,12 @@ static char *getFilePath(const char *appInstDir, OsTyp osTyp)
     // the OS and the version of the app being used...
 
     if (osTyp == macOS) {
+        // macOS app version 4.3.x: appInstDir/Data/Library/Application Support/FulGaz/allrides_v4.json
         snprintf(filePath, sizeof (filePath), "%sData/Library/Application Support/FulGaz/%s", appInstDir, fileName);
         return filePath;
     } else {
         // Windows app version 4.2.x:  appInstDir/LocalState/allrides_v4.json
         // Windows app version 4.50.x: appInstDir/LocalCache/Local/FulGaz/allrides_v4.json
-        // macOS app version x.x.x: /Users/mmourier/Library/Containers/com.bizarmobile.fulgaz/Data/Library/Application Support/FulGaz/allrides_v4.json
 
         // Try 4.50.x ...
         snprintf(filePath, sizeof (filePath), "%sLocalCache/Local/FulGaz/%s", appInstDir, fileName);
@@ -751,9 +781,9 @@ static const char *help =
         "    --max-elevation-gain <value>\n"
         "        Only include rides with an elevation gain (in meters) up to the \n"
         "        specified value.\n"
-        "    --output-format {csv|html}\n"
+        "    --output-format {csv|html|text}\n"
         "        Specifies the format of the output file with the list of routes.\n"
-        "        If omitted, the CSV format is used by default.\n"
+        "        If omitted, the plain text format is used by default.\n"
         "    --title <name>\n"
         "        Only include rides that have <name> in their title. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"gavia\"\n"
@@ -820,6 +850,8 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
                 pArgs->outFmt = csv;
             } else if (strcmp(val, "html") == 0) {
                 pArgs->outFmt = html;
+            } else if (strcmp(val, "text") == 0) {
+                pArgs->outFmt = text;
             } else {
                 fprintf(stderr, "Invalid output format: %s\n", val);
                 return -1;
@@ -845,8 +877,8 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         // Omitting the output file format is only
         // allowed when downloading the video or
         // the shiz files.
-        fprintf(stderr, "INFO: Output file format not specified; using CSV by default.\n");
-        pArgs->outFmt = csv;
+        fprintf(stderr, "INFO: Output file format not specified; using plain text by default.\n");
+        pArgs->outFmt = text;
     }
 
     return 0;

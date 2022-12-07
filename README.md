@@ -59,9 +59,9 @@ OPTIONS:
     --max-elevation-gain <value>
         Only include rides with an elevation gain (in meters) up to the
         specified value.
-    --output-format {csv|html}
+    --output-format {csv|html|text}
         Specifies the format of the output file with the list of routes.
-        If omitted, the CSV format is used by default.
+        If omitted, the plain text format is used by default.
     --title <name>
         Only include rides that have <name> in their title. The name
         match is case-insensitive and liberal: e.g. specifying "gavia"
@@ -89,6 +89,53 @@ $ ./whatsOnFulGaz.exe --output-format html --max-distance 20 --max-elevation-gai
 
 # Example 3
 
+Show all rides that have the word "zoncolan" in their title:
+
+```
+$ ./whatsOnFulGaz.exe --title zoncolan
+{
+    Name:            Monte Zoncolan Priola
+    Country:         Italy
+    Contributor:     Hans Peter Obwaller
+    Distance:        10.87
+    Elevation Gain:  1175
+    Duration:        01:00:14
+    Toughness Score: 616
+    720p Video:      https://fulgaz.cachefly.net/file/fulgaz-videos/720P/Monte-Zoncolan-Priola.mp4
+    1080p Video:     https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Monte-Zoncolan-Priola.mp4
+    4K Video:        https://fulgaz.cachefly.net/file/fulgaz-videos/4K/Monte-Zoncolan-Priola.mp4
+    SHIZ:            https://assets.fulgaz.com/Monte-Zoncolan-Priola-seg.shiz
+}
+{
+    Name:            Zoncolan from Ovaro
+    Country:         Italy
+    Contributor:     Hans Peter Obwaller
+    Distance:        10.70
+    Elevation Gain:  1176
+    Duration:        00:59:03
+    Toughness Score: 615
+    720p Video:      https://fulgaz.cachefly.net/file/fulgaz-videos/720P/Ovaro-Zoncolan.mp4
+    1080p Video:     https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Ovaro-Zoncolan.mp4
+    4K Video:        https://fulgaz.cachefly.net/file/fulgaz-videos/4K/Ovaro-Zoncolan.mp4
+    SHIZ:            https://assets.fulgaz.com/Ovaro-Zoncolan-seg.shiz
+}
+{
+    Name:            Zoncolan from Sutrio
+    Country:         Italy
+    Contributor:     Hans Peter Obwaller
+    Distance:        13.38
+    Elevation Gain:  1154
+    Duration:        00:59:26
+    Toughness Score: 513
+    720p Video:      https://fulgaz.cachefly.net/file/fulgaz-videos/720P/Zoncolan-Sutrio.mp4
+    1080p Video:     https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Zoncolan-Sutrio.mp4
+    4K Video:        https://fulgaz.cachefly.net/file/fulgaz-videos/4K/Zoncolan-Sutrio.mp4
+    SHIZ:            https://assets.fulgaz.com/Zoncolan-Sutrio-seg.shiz
+}
+```
+
+# Example 4
+
 Download the SHIZ control file of each of the rides filmed by Hans Peter Obwaller, and store them in the D:\FulGaz\Shiz folder:
 
 ```
@@ -101,7 +148,7 @@ Downloading: https://assets.fulgaz.com/Alpenvereinshutte-seg.shiz ....
      .
 ```
 
-# Example 4
+# Example 5
 
 Download the 1080p video file of each of the rides filmed by Rob Bennett in France (showing the file download progress), and store them in the D:\FulGaz\Videos folder:
 

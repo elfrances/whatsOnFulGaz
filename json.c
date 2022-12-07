@@ -170,3 +170,43 @@ int jsonFindObjByTag(const JsonObject *pObj, const char *tag, JsonObject *pEmbOb
     return -1;
 }
 
+// Search the specified object for an array with the
+// given tag: e.g.
+//
+//   { ..., "<tag>":[<ent0>,<ent1>,...,<entN>], ... }
+//
+int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArray)
+{
+    const char *val;
+
+    if ((val = jsonFindTag(pObj, tag)) != NULL) {
+        // Locate the left square bracket
+        char *leftBracket = strchr(val, '[');
+        if (leftBracket != NULL) {
+            // Locate the matching right square bracket
+            int level = 0;
+            for (char *p = leftBracket; p != pObj->end; p++) {
+                if (*p == '[') {
+                    level++;
+                } else if (*p == ']') {
+                    level--;
+                }
+                if (level == 0) {
+                    char *rightBracket = p;
+                    pArray->start = leftBracket;
+                    pArray->end = rightBracket;
+                    return 0;
+                }
+            }
+        }
+    }
+
+    return -1;
+}
+
+// Process each element in the specified array
+int jsonForEach(const JsonArray *pArray, JsonCbHdlr handler)
+{
+    // TBD
+    return 0;
+}
