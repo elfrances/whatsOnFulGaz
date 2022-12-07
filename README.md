@@ -11,7 +11,7 @@ A simple command-line tool similar in functionality to the web applet https://wh
 
 # Building the tool
 
-To build the whatsOnFulGaz tool all you need to do is run 'make' at the top-level directory. The tool is known to build under Ubuntu, macOS, and Cygwin. As it is written entirely in C and only uses the well-known CURL library, it should be easy to port to other platforms.
+To build the whatsOnFulGaz tool all you need to do is run 'make' at the top-level directory. The tool is known to build under Windows (Cygwin) and macOS. As it is written entirely in C and only uses the well-known CURL library, it should be easy to port to other platforms.
 
 ```
 $ make

@@ -645,7 +645,12 @@ static char *getBizarMobilePath(OsTyp osTyp)
     static char appInstDir[512];
 
     // Figure out our user name
-    if ((userName = getenv("USERNAME")) == NULL) {
+    if (osTyp == macOS) {
+        userName = getenv("LOGNAME");
+    } else {
+        userName = getenv("USERNAME");
+    }
+    if (userName == NULL) {
         fprintf(stderr, "ERROR: can't determine user name (%s)\n", strerror(errno));
         return NULL;
     }
@@ -849,7 +854,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
 int main(int argc, char *argv[])
 {
     CmdArgs cmdArgs = {0};
-    OsTyp osTyp = macOS;
+    OsTyp osTyp = unk;
 	char *appInstDir;
 	char *filePath;
     int fd;
@@ -867,6 +872,8 @@ int main(int argc, char *argv[])
     // Figure out the OS type
     if (getenv("WINDIR") != NULL) {
         osTyp = windows;
+    } else {
+        osTyp = macOS;
     }
 
     // Figure out the install directory of the app
