@@ -81,7 +81,7 @@ typedef enum OutFmt {
 } OutFmt;
 
 typedef enum VidRes {
-    any = 0,
+    none = 0,
     res720p = 1,
     res1080p = 2,
     res4K = 3,
@@ -99,10 +99,11 @@ typedef struct CmdArgs {
     const char *title;
     const char *dlFolder;
     OutFmt outFmt;
-    VidRes vidRes;
+    VidRes getVideo;
     int getShiz;
-    int getVideo;
     int dlProg;
+    int maxDistance;
+    int maxElevGain;
 } CmdArgs;
 
 typedef struct RouteInfo {
@@ -186,15 +187,11 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         // Ignore this ride...
         return -1;
     }
-    if ((pArgs->vidRes == res720p) && (pInfo->vim720 == NULL)) {
+    if ((pArgs->maxDistance != 0) && (atoi(pInfo->distance) > pArgs->maxDistance)) {
         // Ignore this ride...
         return -1;
     }
-    if ((pArgs->vidRes == res1080p) && (pInfo->vim1080 == NULL)) {
-        // Ignore this ride...
-        return -1;
-    }
-    if ((pArgs->vidRes == res4K) && (pInfo->vimMaster == NULL)) {
+    if ((pArgs->maxElevGain != 0) && (atoi(pInfo->elevation) > pArgs->maxElevGain)) {
         // Ignore this ride...
         return -1;
     }
@@ -572,9 +569,9 @@ static void getVideoFiles(const RouteDB *pDb, const CmdArgs *pArgs)
 
     TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
         char url[256];
-        if (pArgs->vidRes == res720p) {
+        if (pArgs->getVideo == res720p) {
             snprintf(url, sizeof (url), "%s%s", pDb->mp4UrlPfx, pRoute->vim720);
-        } else if (pArgs->vidRes == res1080p) {
+        } else if (pArgs->getVideo == res1080p) {
             snprintf(url, sizeof (url), "%s%s", pDb->mp4UrlPfx, pRoute->vim1080);
         } else {
             snprintf(url, sizeof (url), "%s%s", pDb->mp4UrlPfx, pRoute->vimMaster);
@@ -739,12 +736,19 @@ static const char *help =
         "        Show video download progress info.\n"
         "    --get-shiz\n"
         "        Download the SHIZ control file of the ride.\n"
-        "    --get-video\n"
-        "        Download the MP4 video file of the ride.\n"
+        "    --get-video {720|1080|4k}\n"
+        "        Download the MP4 video file of the ride at the specified resolution.\n"
         "    --help\n"
         "        Show this help and exit.\n"
+        "    --max-distance <value>\n"
+        "        Only include rides with a distance (in Km's) up to the specified\n"
+        "        value.\n"
+        "    --max-elevation-gain <value>\n"
+        "        Only include rides with an elevation gain (in meters) up to the \n"
+        "        specified value.\n"
         "    --output-format {csv|html}\n"
-        "        Specifies the format of the output file.\n"
+        "        Specifies the format of the output file with the list of routes.\n"
+        "        If omitted, the CSV format is used by default.\n"
         "    --title <name>\n"
         "        Only include rides that have <name> in their title. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"gavia\"\n"
@@ -752,8 +756,6 @@ static const char *help =
         "        Spot\", and \"Passo di Gavia from Ponte di Legno\".\n"
         "    --version\n"
         "        Show program's version info and exit.\n"
-        "    --video-resolution {720|1080|4k}\n"
-        "        Only include rides with video at the specified resolution.\n"
         "\n";
 
 static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
@@ -783,7 +785,30 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         } else if (strcmp(arg, "--get-shiz") == 0) {
             pArgs->getShiz = 1;
         } else if (strcmp(arg, "--get-video") == 0) {
-            pArgs->getVideo = 1;
+            val = argv[++n];
+            if (strcmp(val, "720") == 0) {
+                pArgs->getVideo = res720p;
+            } else if (strcmp(val, "1080") == 0) {
+                pArgs->getVideo = res1080p;
+            } else if ((strcmp(val, "4k") == 0) ||
+                       (strcmp(val, "4K") == 0)) {
+                pArgs->getVideo = res4K;
+            } else {
+                fprintf(stderr, "Invalid video resolution: %s\n", val);
+                return -1;
+            }
+        } else if (strcmp(arg, "--max-distance") == 0) {
+            val = argv[++n];
+            if (sscanf(val, "%d", &pArgs->maxDistance) != 1) {
+                fprintf(stderr, "Invalid max distance value: %s\n", val);
+                return -1;
+            }
+        } else if (strcmp(arg, "--max-elevation-gain") == 0) {
+            val = argv[++n];
+            if (sscanf(val, "%d", &pArgs->maxElevGain) != 1) {
+                fprintf(stderr, "Invalid max elevation gain value: %s\n", val);
+                return -1;
+            }
         } else if (strcmp(arg, "--output-format") == 0) {
             val = argv[++n];
             if (strcmp(val, "csv") == 0) {
@@ -792,19 +817,6 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
                 pArgs->outFmt = html;
             } else {
                 fprintf(stderr, "Invalid output format: %s\n", val);
-                return -1;
-            }
-        } else if (strcmp(arg, "--video-resolution") == 0) {
-            val = argv[++n];
-            if (strcmp(val, "720") == 0) {
-                pArgs->vidRes = res720p;
-            } else if (strcmp(val, "1080") == 0) {
-                pArgs->vidRes = res1080p;
-            } else if ((strcmp(val, "4k") == 0) ||
-                       (strcmp(val, "4K") == 0)) {
-                pArgs->vidRes = res4K;
-            } else {
-                fprintf(stderr, "Invalid video resolution: %s\n", val);
                 return -1;
             }
         } else if (strcmp(arg, "--title") == 0) {
@@ -824,9 +836,11 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         }
     }
 
-    if (pArgs->getVideo && (pArgs->vidRes == 0)) {
-        // By default get the HD video
-        pArgs->vidRes = res1080p;
+    if ((pArgs->outFmt == undef) && (pArgs->getVideo == none)) {
+        // Omitting the output file format is only
+        // allowed when downloading the video files
+        fprintf(stderr, "INFO: Output file format not specified; using CSV by default.\n");
+        pArgs->outFmt = csv;
     }
 
     return 0;
