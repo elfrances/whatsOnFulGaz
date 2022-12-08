@@ -178,4 +178,38 @@ Downloading: https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Tour-De-France
      .
 ```
 
+# Example 6
+
+When running the **whatsOnFulGaz** tool on a system where the FulGaz app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the FulGaz app is not installed or not supported (like Ubuntu), one can manually specify the location of the JSON file using the --allrides-file option:
+
+```
+$ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mourier --title cuadrado
+{
+    Name:            Camino del Cuadrado
+    Country:         Argentina
+    Contributor:     Marcelo Mourier
+    Distance:        19.02
+    Elevation Gain:  653
+    Duration:        01:09:40
+    Toughness Score: 382
+    720p Video:      https://fulgaz.cachefly.net/file/fulgaz-videos/720P/Camino-Del-Cuadrado.mp4
+    1080p Video:     https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Camino-Del-Cuadrado.mp4
+    4K Video:        https://fulgaz.cachefly.net/file/fulgaz-videos/4K/Camino-Del-Cuadrado.mp4
+    SHIZ:            https://assets.fulgaz.com/Camino-Del-Cuadrado-working-seg.shiz
+}
+{
+    Name:            Camino del Cuadrado Downhill
+    Country:         Argentina
+    Contributor:     Marcelo Mourier
+    Distance:        17.82
+    Elevation Gain:  105
+    Duration:        00:30:47
+    Toughness Score: 63
+    720p Video:      https://fulgaz.cachefly.net/file/fulgaz-videos/720P/Camino-Del-Cuadrado-Downhill.mp4
+    1080p Video:     https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Camino-Del-Cuadrado-Downhill.mp4
+    4K Video:        https://fulgaz.cachefly.net/file/fulgaz-videos/4K/Camino-Del-Cuadrado-Downhill.mp4
+    SHIZ:            https://assets.fulgaz.com/Camino-Del-Cuadrado-Downhill-working-seg.2.shiz
+}
+```
+
 
