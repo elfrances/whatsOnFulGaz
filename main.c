@@ -95,6 +95,7 @@ typedef enum OsTyp {
 } OsTyp;
 
 typedef struct CmdArgs {
+    const char *inFile;
     const char *category;
     const char *contributor;
     const char *country;
@@ -752,11 +753,15 @@ static const char *help =
         "    whatsOnFulGaz [OPTIONS]\n"
         "\n"
         "    This command-line utility parses the JSON file that describes all the\n"
-        "    available rides, and creates a CSV file or an HTML file with the list\n"
-        "    of routes, that can be viewed with Excel or LibreOffice Calc (CSV) or\n"
-        "    with Chrome or Edge (HTML).\n"
+        "    available rides in the FulGaz library, and creates a CSV file or an HTML\n"
+        "    file with the list of routes, that can be viewed with a spreadsheet app\n"
+        "    such as Excel or LibreOffice Calc (CSV) or with a web broswer app such as\n"
+        "    Chrome or Edge (HTML).\n"
         "\n"
         "OPTIONS:\n"
+        "    --allrides-file <path>\n"
+        "        Specifies the path to the JSON file that describes all the available\n"
+        "        rides in the library.\n"
         "    --contributor <name>\n"
         "        Only include rides submitted by the specified contributor. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"mourier\"\n"
@@ -809,6 +814,8 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         } else if (strcmp(arg, "--version") == 0) {
             fprintf(stdout, "Program version %s built on %s %s\n", PROGRAM_VERSION, __DATE__, __TIME__);
             exit(0);
+        } else if (strcmp(arg, "--allrides-file") == 0) {
+            pArgs->inFile = argv[++n];
         } else if (strcmp(arg, "--contributor") == 0) {
             pArgs->contributor = argv[++n];
         } else if (strcmp(arg, "--country") == 0) {
@@ -864,6 +871,15 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         }
     }
 
+    if (pArgs->inFile != NULL) {
+        // Make sure the allrides file exists
+        struct stat stBuf = {0};
+        if ((stat(pArgs->inFile, &stBuf) != 0) || !S_ISREG(stBuf.st_mode)) {
+            fprintf(stderr, "Invalid allrides folder: %s\n", pArgs->inFile);
+            return -1;
+        }
+    }
+
     if (pArgs->dlFolder != NULL) {
         // Make sure the download folder exists
         struct stat stBuf = {0};
@@ -877,7 +893,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         // Omitting the output file format is only
         // allowed when downloading the video or
         // the shiz files.
-        fprintf(stderr, "INFO: Output file format not specified; using plain text by default.\n");
+        //fprintf(stderr, "INFO: Output file format not specified; using plain text by default.\n");
         pArgs->outFmt = text;
     }
 
@@ -888,8 +904,7 @@ int main(int argc, char *argv[])
 {
     CmdArgs cmdArgs = {0};
     OsTyp osTyp = unk;
-	char *appInstDir;
-	char *filePath;
+	const char *filePath;
     int fd;
     struct stat stBuf = {0};
     char *data;
@@ -909,16 +924,20 @@ int main(int argc, char *argv[])
         osTyp = macOS;
     }
 
-    // Figure out the install directory of the app
-    if ((appInstDir = getBizarMobilePath(osTyp)) == NULL) {
-        fprintf(stderr, "ERROR: can't determine app's install directory\n");
-        return -1;
-    }
+    if ((filePath = cmdArgs.inFile) == NULL) {
+        char *appInstDir;
 
-    // Figure out the full path to the allrides_v4.json file
-    if ((filePath = getFilePath(appInstDir, osTyp)) == NULL) {
-        fprintf(stderr, "ERROR: can't get file path (%s)\n", strerror(errno));
-        return -1;
+        // Figure out the install directory of the app
+        if ((appInstDir = getBizarMobilePath(osTyp)) == NULL) {
+            fprintf(stderr, "ERROR: can't determine app's install directory\n");
+            return -1;
+        }
+
+        // Figure out the full path to the allrides_v4.json file
+        if ((filePath = getFilePath(appInstDir, osTyp)) == NULL) {
+            fprintf(stderr, "ERROR: can't get file path (%s)\n", strerror(errno));
+            return -1;
+        }
     }
 
     //printf("Found rides file: %s\n", filePath);
