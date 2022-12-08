@@ -1,5 +1,5 @@
 # whatsOnFulGaz
-FulGaz is a popular multi-platform virtual cycling app. At the time of this writing, its library includes more than 2,000 routes in 56 different countries. A companion web applet https://whatsonfulgaz.com is used to interactively browse the route library.  whatsOnFulGaz is a simple command-line tool similar in functionality to the web applet, but intended to be used mostly in unattended batch mode. 
+FulGaz is a popular multi-platform virtual cycling app. At the time of this writing, its library includes more than 2,000 routes in 56 different countries. A companion web applet https://whatsonfulgaz.com is used to interactively browse the route library.  **whatsOnFulGaz** is a simple command-line tool similar in functionality to the web applet, but intended to be used mostly in unattended batch mode. 
 
 The tool has the following features:
 
@@ -13,7 +13,7 @@ The tool has the following features:
 
 # Building the tool
 
-To build the whatsOnFulGaz tool all you need to do is run 'make' at the top-level directory. The tool is known to build under Windows (Cygwin), macOS Ventura, and Ubuntu. As it is written entirely in C and only uses the well-known CURL library, it should be easy to port to other platforms.
+To build the **whatsOnFulGaz** tool all you need to do is run 'make' at the top-level directory. The tool is known to build under Windows (Cygwin), macOS Ventura, and Ubuntu. As it is written entirely in C and only uses the well-known CURL library, it should be easy to port to other platforms as well.
 
 ```
 $ make
@@ -22,12 +22,24 @@ cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -o main.o -c main.c
 cc -ggdb  -o ./whatsOnFulGaz ./json.o ./main.o -lcurl
 ```
 
+If your OS is missing the CURL library, you'll get a compilation error like this:
+
+```
+main.c:12:10: fatal error: curl/curl.h: No such file or directory
+```
+
+How to install the CURL library depends on the OS you are using.  In the case of Windows (Cygwin) you need to install it via the Cygwin's "setup.exe" package management tool.  In the case of Ubuntu you can install it using the following command:
+
+```
+$ sudo apt-get install libcurl4-openssl-dev
+```
+
 # Usage
 
 Running the tool with the --help argument will print the list of available options:
 
 ```
-$ ./whatsOnFulGaz.exe --help
+$ ./whatsOnFulGaz --help
 SYNTAX:
     whatsOnFulGaz [OPTIONS]
 
@@ -78,7 +90,7 @@ OPTIONS:
 Generate a CSV file with all the rides in the library and store it in the file AllRides.csv in the current folder.  This file can then be opened with Excel or with LibreOffice Calc, where the rides (rows in the spreadsheet) can be sorted by any of the available column values: e.g. contributor, country, length, etc.
 
 ```
-$ ./whatsOnFulGaz.exe --output-format csv > AllRides.csv
+$ ./whatsOnFulGaz --output-format csv > AllRides.csv
 ```
 
 # Example 2
@@ -86,7 +98,7 @@ $ ./whatsOnFulGaz.exe --output-format csv > AllRides.csv
 Generate an HTML file with all rides that have a distance of up to 20 km and an elevation gain of up to 100 meters, and store it in the file EasyRides.html:
 
 ```
-$ ./whatsOnFulGaz.exe --output-format html --max-distance 20 --max-elevation-gain 100 > EasyRides.html
+$ ./whatsOnFulGaz --output-format html --max-distance 20 --max-elevation-gain 100 > EasyRides.html
 ```
 
 # Example 3
@@ -94,7 +106,7 @@ $ ./whatsOnFulGaz.exe --output-format html --max-distance 20 --max-elevation-gai
 Show all rides that have the word "zoncolan" in their title:
 
 ```
-$ ./whatsOnFulGaz.exe --title zoncolan
+$ ./whatsOnFulGaz --title zoncolan
 {
     Name:            Monte Zoncolan Priola
     Country:         Italy
@@ -141,7 +153,7 @@ $ ./whatsOnFulGaz.exe --title zoncolan
 Download the SHIZ control file of each of the rides filmed by Hans Peter Obwaller, and store them in the D:\FulGaz\Shiz folder:
 
 ```
-$ ./whatsOnFulGaz.exe --contributor obwaller --get-shiz --download-folder /cygdrive/d/FulGaz/Shiz/
+$ ./whatsOnFulGaz --contributor obwaller --get-shiz --download-folder /cygdrive/d/FulGaz/Shiz/
 Downloading: https://assets.fulgaz.com/Above-Uttendorf-working-seg.shiz ....
 Downloading: https://assets.fulgaz.com/Alpenverein.shiz ....
 Downloading: https://assets.fulgaz.com/Alpenvereinshutte-seg.shiz ....
@@ -155,7 +167,7 @@ Downloading: https://assets.fulgaz.com/Alpenvereinshutte-seg.shiz ....
 Download the 1080p video file of each of the rides filmed by Rob Bennett in France (showing the file download progress), and store them in the D:\FulGaz\Videos folder:
 
 ```
-$ ./whatsOnFulGaz.exe --contributor bennett --country france --get-video 1080 --download-progress --download-folder /cygdrive/d/FulGaz/Videos/
+$ ./whatsOnFulGaz --contributor bennett --country france --get-video 1080 --download-progress --download-folder /cygdrive/d/FulGaz/Videos/
 Downloading: https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Tour-De-France-2022-Stage-20-Rocamadour-Time-Trial.mp4 ....
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
