@@ -1,11 +1,13 @@
 # whatsOnFulGaz
-FulGaz is a popular multi-platform virtual cycling app. At the time of this writing, its library includes more than 2,000 routes in 56 different countries. A companion web applet https://whatsonfulgaz.com is used to browse the route library.  whatsOnFulGaz is a simple command-line tool similar in functionality to the web applet, but intended to be used mostly in unattended batch mode. The tool has the following features:
+FulGaz is a popular multi-platform virtual cycling app. At the time of this writing, its library includes more than 2,000 routes in 56 different countries. A companion web applet https://whatsonfulgaz.com is used to interactively browse the route library.  whatsOnFulGaz is a simple command-line tool similar in functionality to the web applet, but intended to be used mostly in unattended batch mode. 
+
+The tool has the following features:
 
 1. It can generate a comma-separated-value (CSV) file that can then be viewed with Excel, LibreOfice Calc, or any other spreadsheet app.  The CSV file has an entry (row) for each matching ride, which includes the most relevant data about the ride: e.g. contributor, country, length, elevation gain, etc.
 
 2. It can generate an HTML file that can then be viewed with any web browser.  The web page includes a table with the same info as in the CSV file.  Each ride includes the links to download the 720p, 1080p, or 4K video file of the ride.
 
-3. It supports match filters to select rides that where filmed by a given contributor, in a given country, etc.
+3. It supports match filters to select rides that where filmed by a given contributor, in a given country, with a given title, etc.
 
 4. It can automatically download the MP4 video file or the SHIZ control file of all the matching rides, into a selected download folder.
 
