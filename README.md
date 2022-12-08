@@ -11,7 +11,7 @@ FulGaz is a popular multi-platform virtual cycling app. At the time of this writ
 
 # Building the tool
 
-To build the whatsOnFulGaz tool all you need to do is run 'make' at the top-level directory. The tool is known to build under Windows (Cygwin) and macOS. As it is written entirely in C and only uses the well-known CURL library, it should be easy to port to other platforms.
+To build the whatsOnFulGaz tool all you need to do is run 'make' at the top-level directory. The tool is known to build under Windows (Cygwin), macOS Ventura, and Ubuntu. As it is written entirely in C and only uses the well-known CURL library, it should be easy to port to other platforms.
 
 ```
 $ make
