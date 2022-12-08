@@ -31,6 +31,7 @@ main.c:12:10: fatal error: curl/curl.h: No such file or directory
 How to install the CURL library depends on the OS you are using.  In the case of Windows (Cygwin) you need to install it via the Cygwin's "setup.exe" package management tool.  In the case of Ubuntu you can install it using the following command:
 
 ```
+$ sudo apt-get install libcurl4
 $ sudo apt-get install libcurl4-openssl-dev
 ```
 
