@@ -13,13 +13,17 @@ The tool has the following features:
 
 # Building the tool
 
-To build the **whatsOnFulGaz** tool all you need to do is run 'make' at the top-level directory. The tool is known to build under Windows (Cygwin), macOS Ventura, and Ubuntu. As it is written entirely in C and only uses the well-known CURL library, it should be easy to port to other platforms as well.
+**whatsOnFulGaz** is written entirely in C and only uses the well-known CURL library. The tool is known to build under Windows (Cygwin), macOS Ventura, and Ubuntu 22.04.
+ 
+To build the **whatsOnFulGaz** tool all you need to do is run 'make' at the top-level directory:
 
 ```
 $ make
-cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -o json.o -c json.c
-cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -o main.o -c main.c
-cc -ggdb  -o ./whatsOnFulGaz ./json.o ./main.o -lcurl
+cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o download.o -c download.c
+cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o json.o -c json.c
+cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o main.o -c main.c
+cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o output.o -c output.c
+cc -ggdb  -o ./whatsOnFulGaz ./download.o ./json.o ./main.o ./output.o -lcurl
 ```
 
 If your OS is missing the CURL library, you'll get a compilation error like this:
@@ -28,7 +32,10 @@ If your OS is missing the CURL library, you'll get a compilation error like this
 main.c:12:10: fatal error: curl/curl.h: No such file or directory
 ```
 
-How to install the CURL library depends on the OS you are using.  In the case of Windows (Cygwin) you need to install it via the Cygwin's "setup.exe" package management tool.  In the case of Ubuntu you can install it using the following command:
+How to install the CURL library depends on the OS you are using.
+
+- When using Windows (Cygwin) you need to install it via the Cygwin's "setup.exe" package management tool, and select the libcurl-devel, libcurl-doc, and libcurl4 packages, as shown [here](https://github.com/elfrances/whatsOnFulGaz/assets/cygwin_setup.png).  
+- When using Ubuntu you can install it using the following command:
 
 ```
 $ sudo apt-get install libcurl4

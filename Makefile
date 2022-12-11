@@ -18,8 +18,14 @@ BIN_DIR = .
 DEP_DIR = .
 OBJ_DIR = .
 
+OS := $(shell uname -o)
+
 CFLAGS = -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0
 LDFLAGS = -ggdb 
+
+ifeq ($(OS),Cygwin)
+	CFLAGS += -D__CYGWIN__
+endif
 
 SOURCES = $(wildcard *.c)
 OBJECTS := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SOURCES))
