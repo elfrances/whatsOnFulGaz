@@ -180,7 +180,7 @@ Downloading: https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Tour-De-France
 
 # Example 6
 
-When running the **whatsOnFulGaz** tool on a system where the FulGaz app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the FulGaz app is not installed or not supported (like Ubuntu), one can manually specify the location of the JSON file using the --allrides-file option:
+When running the **whatsOnFulGaz** tool on a system where the FulGaz app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the FulGaz app is not installed or not supported (such as Ubuntu), one can manually specify the location of the JSON file using the ``--allrides-file <path>`` option:
 
 ```
 $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mourier --title cuadrado
