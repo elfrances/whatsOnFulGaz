@@ -34,8 +34,8 @@ main.c:12:10: fatal error: curl/curl.h: No such file or directory
 
 How to install the CURL library depends on the OS you are using.
 
-- When using Windows (Cygwin) you need to install it via the Cygwin's "setup.exe" package management tool, and select the libcurl-devel, libcurl-doc, and libcurl4 packages, as shown [here](https://github.com/elfrances/whatsOnFulGaz/assets/cygwin_setup.png).  
-- When using Ubuntu you can install it using the following command:
+- When using Windows (Cygwin) you need to install it via the Cygwin's "setup.exe" package management tool, and select the libcurl-devel, libcurl-doc, and libcurl4 packages, as shown [here](assets/cygwin_setup.png).  
+- When using Ubuntu you can install it using the "apt-get" command, as shown below:
 
 ```
 $ sudo apt-get install libcurl4
@@ -93,9 +93,13 @@ OPTIONS:
         Show program's version info and exit.
 ```
 
+# A note about running whatsOnFulGaz under Windows/Cygwin
+
+When running the tool under Windows/Cygwin notice that the drive letters used in path names, such as C: and D:, are replaced by the corresponding "cygdrive".  For example, the path "C:\Users\Marcelo\Documents" becomes "/cygdrive/c/Users/Marcelo/Documents", and the path "D:\FulGaz\Videos" becomes "/cygdrive/d/FulGaz/Videos".
+
 # Example 1
 
-Generate a CSV file with all the rides in the library and store it in the file AllRides.csv in the current folder.  This file can then be opened with Excel or with LibreOffice Calc, where the rides (rows in the spreadsheet) can be sorted by any of the available column values: e.g. contributor, country, length, etc.
+Generate a CSV file with all the rides in the library and store it in the file [AllRides.csv](assets/AllRides.csv.png) in the current folder.  This file can then be opened with Excel or with LibreOffice Calc, where the rides (rows in the spreadsheet) can be sorted by any of the available column values: e.g. contributor, country, length, etc.
 
 ```
 $ ./whatsOnFulGaz --output-format csv > AllRides.csv
@@ -103,7 +107,7 @@ $ ./whatsOnFulGaz --output-format csv > AllRides.csv
 
 # Example 2
 
-Generate an HTML file with all rides that have a distance of up to 20 km and an elevation gain of up to 100 meters, and store it in the file EasyRides.html:
+Generate an HTML file with all rides that have a distance of up to 20 km and an elevation gain of up to 100 meters, and store it in the file [EasyRides.html](assets/EasyRides.html.png) in the current folder:
 
 ```
 $ ./whatsOnFulGaz --output-format html --max-distance 20 --max-elevation-gain 100 > EasyRides.html
