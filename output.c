@@ -29,7 +29,12 @@ static char *fmtCountry(const char *location)
     char *p;
     static char fmtBuf[128];
 
+    fmtBuf[0] = '\0';
+
+    // Locate the last comma character, before
+    // the country name...
     if ((p = strrchr(location, ',')) != NULL) {
+        // Remove any white space after the comma
         for (p = p+1; *p != '\0'; p++) {
             int c = *p;
             if (!isspace(c))
@@ -38,7 +43,63 @@ static char *fmtCountry(const char *location)
         snprintf(fmtBuf, sizeof (fmtBuf), "%s", p);
     } else if (location[0] != '\0') {
         snprintf(fmtBuf, sizeof (fmtBuf), "%s", location);
-    } else {
+    }
+
+    if (fmtBuf[0] == '\0') {
+        snprintf(fmtBuf, sizeof (fmtBuf), "???");
+    }
+
+    return fmtBuf;
+}
+
+// Extract the province/state from the location string, which
+// looks like this:
+//   "Boulder, Colorado, USA"
+//
+static char *fmtProvince(const char *location)
+{
+    char *p0, *p1;
+    static char fmtBuf[128];
+
+    fmtBuf[0] = '\0';
+
+    // Locate the last comma character, before
+    // the country name...
+    if ((p1 = strrchr(location, ',')) != NULL) {
+        // Remove any white space before the comma
+        for (p1 = p1-1; p1 != location; p1--) {
+            int c = *p1;
+            if (!isspace(c))
+                break;
+        }
+
+        // Locate the previous comma character, before
+        // the province/state name. Notice that a few
+        // routes do not have a city before the province
+        // or state, so there is no such comma character.
+        for (p0 = p1; p0 != location; p0--) {
+            int c = *p0;
+            if (c == ',') {
+                // Remove any white space after the comma
+                for (p0 = p0+1; *p0 != '\0'; p0++) {
+                    int c = *p0;
+                    if (!isspace(c))
+                        break;
+                }
+                break;
+            }
+        }
+        {
+            char *p;
+
+            for (p = fmtBuf; p0 <= p1; p0++) {
+                *p++ = *p0;
+            }
+            *p = '\0';
+        }
+    }
+
+    if (fmtBuf[0] == '\0') {
         snprintf(fmtBuf, sizeof (fmtBuf), "???");
     }
 
@@ -62,6 +123,7 @@ static char *fmtTime(int time)
 static const char *cellName[] = {
         "Name",
         "Country",
+        "Province/State",
         "Contributor",
         "Distance",
         "Elevation Gain",
@@ -86,6 +148,7 @@ void printCsvOutput(const RouteDB *pDb)
     TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
         printf("%s,", fmtTitle(pRoute->title));
         printf("%s,", fmtCountry(pRoute->location));
+        printf("%s,", fmtProvince(pRoute->location));
         printf("%s,", pRoute->contributor);
         printf("%s,", pRoute->distance);
         printf("%s,", pRoute->elevation);
@@ -141,6 +204,7 @@ void printHttpOutput(const RouteDB *pDb)
         printf("            <tr valign=\"top\">\n");
         printStringCellValue(fmtTitle(pRoute->title), 0);
         printStringCellValue(fmtCountry(pRoute->location), 0);
+        printStringCellValue(fmtProvince(pRoute->location), 0);
         printStringCellValue(pRoute->contributor, 0);
         printStringCellValue(pRoute->distance, 0);
         printStringCellValue(pRoute->elevation, 0);
@@ -170,6 +234,7 @@ void printTextOutput(const RouteDB *pDb)
         printf("{\n");
         printf("    Name:            %s\n", fmtTitle(pRoute->title));
         printf("    Country:         %s\n", fmtCountry(pRoute->location));
+        printf("    Province/State:  %s\n", fmtProvince(pRoute->location));
         printf("    Contributor:     %s\n", pRoute->contributor);
         printf("    Distance:        %s\n", pRoute->distance);
         printf("    Elevation Gain:  %s\n", pRoute->elevation);

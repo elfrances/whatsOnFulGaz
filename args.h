@@ -25,6 +25,7 @@ typedef struct CmdArgs {
     const char *category;
     const char *contributor;
     const char *country;
+    const char *province;
     const char *title;
     const char *dlFolder;
     OutFmt outFmt;

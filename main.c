@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/queue.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include <curl/curl.h>
@@ -17,7 +16,7 @@
 #include "output.h"
 #include "routedb.h"
 
-#define PROGRAM_VERSION "1.0"
+#define PROGRAM_VERSION "1.2"
 
 /*
  * In FulGaz a route record is a JSON object with the
@@ -82,11 +81,16 @@ static const char *help =
         "SYNTAX:\n"
         "    whatsOnFulGaz [OPTIONS]\n"
         "\n"
-        "    This command-line utility parses the JSON file that describes all the\n"
-        "    available rides in the FulGaz library, and creates a CSV file or an HTML\n"
-        "    file with the list of routes, that can be viewed with a spreadsheet app\n"
-        "    such as Excel or LibreOffice Calc (CSV) or with a web broswer app such as\n"
-        "    Chrome or Edge (HTML).\n"
+        "    whatsOnFulGaz is a command-line app that parses the JSON file with all the\n"
+        "    available rides in the FulGaz library, and creates a CSV, HTML, or TXT\n"
+        "    file with the list of routes. The CSV file can be viewed with a spreadsheet\n"
+        "    app such as MS Excel, Google Sheets, or LibreOffice Calc, while the HTML\n"
+        "    file can be viewed with a web browser app such as Chrome, Edge, or Safari.\n"
+        "    The TXT file shows the route info in plain human-readable format.\n"
+        "    The app has several filters that allow it to show only selected routes; e.g.\n"
+        "    by contributor, country, maximum distance, etc.\n"
+        "    Optionally, the app can download in the background the MP4 video file of all\n"
+        "    the routes that matched the specified filters.\n"
         "\n"
         "OPTIONS:\n"
         "    --allrides-file <path>\n"
@@ -119,6 +123,10 @@ static const char *help =
         "    --output-format {csv|html|text}\n"
         "        Specifies the format of the output file with the list of routes.\n"
         "        If omitted, the plain text format is used by default.\n"
+        "    --province <name>\n"
+        "        Only include rides from the specified province or state in the\n"
+        "        specified country. The name match is case-insensitive and liberal:\n"
+        "        e.g. specifying \"cali\" will match all rides from California, USA.\n"
         "    --title <name>\n"
         "        Only include rides that have <name> in their title. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"gavia\"\n"
@@ -193,6 +201,8 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
                 fprintf(stderr, "Invalid output format: %s\n", val);
                 return -1;
             }
+        } else if (strcmp(arg, "--province") == 0) {
+            pArgs->province = argv[++n];
         } else if (strcmp(arg, "--title") == 0) {
             pArgs->title = argv[++n];
         } else {
@@ -349,6 +359,10 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         return -1;
     }
     if ((pArgs->country != NULL) && (stristr(pInfo->location, pArgs->country) == NULL)) {
+        // Ignore this ride...
+        return -1;
+    }
+    if ((pArgs->province != NULL) && (stristr(pInfo->location, pArgs->province) == NULL)) {
         // Ignore this ride...
         return -1;
     }

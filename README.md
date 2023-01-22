@@ -47,16 +47,24 @@ $ sudo apt-get install libcurl4-openssl-dev
 Running the tool with the --help argument will print the list of available options:
 
 ```
-$ ./whatsOnFulGaz --help
 SYNTAX:
     whatsOnFulGaz [OPTIONS]
 
-    This command-line utility parses the JSON file that describes all the
-    available rides, and creates a CSV file or an HTML file with the list
-    of routes, that can be viewed with Excel or LibreOffice Calc (CSV) or
-    with Chrome or Edge (HTML).
+    whatsOnFulGaz is a command-line app that parses the JSON file with all the
+    available rides in the FulGaz library, and creates a CSV, HTML, or TXT
+    file with the list of routes. The CSV file can be viewed with a spreadsheet
+    app such as MS Excel, Google Sheets, or LibreOffice Calc, while the HTML
+    file can be viewed with a web browser app such as Chrome, Edge, or Safari.
+    The TXT file shows the route info in plain human-readable format.
+    The app has several filters that allow it to show only selected routes; e.g.
+    by contributor, country, maximum distance, etc.
+    Optionally, the app can download in the background the MP4 video file of all
+    the routes that matched the specified filters.
 
 OPTIONS:
+    --allrides-file <path>
+        Specifies the path to the JSON file that describes all the available
+        rides in the library.
     --contributor <name>
         Only include rides submitted by the specified contributor. The name
         match is case-insensitive and liberal: e.g. specifying "mourier"
@@ -84,6 +92,10 @@ OPTIONS:
     --output-format {csv|html|text}
         Specifies the format of the output file with the list of routes.
         If omitted, the plain text format is used by default.
+    --province <name>
+        Only include rides from the specified province or state in the
+        specified country. The name match is case-insensitive and liberal:
+        e.g. specifying "cali" will match all rides from California, USA.
     --title <name>
         Only include rides that have <name> in their title. The name
         match is case-insensitive and liberal: e.g. specifying "gavia"
@@ -191,7 +203,7 @@ Downloading: https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Tour-De-France
 
 # Example 6
 
-When running the **whatsOnFulGaz** tool on a system where the FulGaz app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the FulGaz app is not installed or not supported (such as Ubuntu), one can manually specify the location of the JSON file using the ``--allrides-file <path>`` option:
+When running the **whatsOnFulGaz** tool on a system where the official **FulGaz** app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the **FulGaz** app is not installed or not supported (such as Ubuntu), one can manually specify the location of the JSON file using the ``--allrides-file <path>`` option:
 
 ```
 $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mourier --title cuadrado
