@@ -50,16 +50,16 @@ Running the tool with the --help argument will print the list of available optio
 SYNTAX:
     whatsOnFulGaz [OPTIONS]
 
-    whatsOnFulGaz is a command-line app that parses the JSON file with all the
-    available rides in the FulGaz library, and creates a CSV, HTML, or TXT
+    whatsOnFulGaz is a command-line app that parses the JSON file that contains all
+    the available rides in the FulGaz library, and creates a CSV, HTML, or TXT
     file with the list of routes. The CSV file can be viewed with a spreadsheet
-    app such as MS Excel, Google Sheets, or LibreOffice Calc, while the HTML
-    file can be viewed with a web browser app such as Chrome, Edge, or Safari.
+    app such as MS Excel, Google Sheets, or LibreOffice Calc, while the HTML file
+    can be viewed with a web browser app such as Chrome, Edge, or Safari.
     The TXT file shows the route info in plain human-readable format.
-    The app has several filters that allow it to show only selected routes; e.g.
-    by contributor, country, maximum distance, etc.
-    Optionally, the app can download in the background the MP4 video file of all
-    the routes that matched the specified filters.
+    The app has several filters that allow it to show only selected routes; e.g. by
+    contributor, country, maximum distance, etc.
+    Optionally, the app can download in the background the MP4 video file of all the
+    routes that matched the specified filters.
 
 OPTIONS:
     --allrides-file <path>
@@ -103,6 +103,14 @@ OPTIONS:
         Spot", and "Passo di Gavia from Ponte di Legno".
     --version
         Show program's version info and exit.
+
+NOTES:
+    Running the tool under Windows/Cygwin the drive letters are replaced by
+    their equivalent cygdrive: e.g. the path "C:\Users\Marcelo\Documents"
+    becomes "/cygdrive/c/Users/Marcelo/Documents".
+
+BUGS:
+    Report bugs and enhancement requests to: marcelo_mourier@yahoo.com
 ```
 
 # A note about running whatsOnFulGaz under Windows/Cygwin
@@ -134,6 +142,7 @@ $ ./whatsOnFulGaz --title zoncolan
 {
     Name:            Monte Zoncolan Priola
     Country:         Italy
+    Province/State:  Friuli-Venezia Giulia
     Contributor:     Hans Peter Obwaller
     Distance:        10.87
     Elevation Gain:  1175
@@ -147,6 +156,7 @@ $ ./whatsOnFulGaz --title zoncolan
 {
     Name:            Zoncolan from Ovaro
     Country:         Italy
+    Province/State:  Friuli-Venezia Giulia
     Contributor:     Hans Peter Obwaller
     Distance:        10.70
     Elevation Gain:  1176
@@ -160,6 +170,7 @@ $ ./whatsOnFulGaz --title zoncolan
 {
     Name:            Zoncolan from Sutrio
     Country:         Italy
+    Province/State:  Friuli-Venezia Giulia
     Contributor:     Hans Peter Obwaller
     Distance:        13.38
     Elevation Gain:  1154
@@ -210,6 +221,7 @@ $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mouri
 {
     Name:            Camino del Cuadrado
     Country:         Argentina
+    Province/State:  Cordoba
     Contributor:     Marcelo Mourier
     Distance:        19.02
     Elevation Gain:  653
@@ -223,6 +235,7 @@ $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mouri
 {
     Name:            Camino del Cuadrado Downhill
     Country:         Argentina
+    Province/State:  Cordoba
     Contributor:     Marcelo Mourier
     Distance:        17.82
     Elevation Gain:  105
