@@ -7,7 +7,9 @@
 #include <string.h>
 #include <sys/queue.h>
 #include <unistd.h>
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <curl/curl.h>
 
 #include "args.h"
@@ -117,9 +119,15 @@ static const char *help =
         "    --max-distance <value>\n"
         "        Only include rides with a distance (in Km's) up to the specified\n"
         "        value.\n"
+        "    --max-duration <value>\n"
+        "        Only include rides with a duration (in minutes) up to the specified\n"
+        "        value.\n"        
         "    --max-elevation-gain <value>\n"
         "        Only include rides with an elevation gain (in meters) up to the \n"
         "        specified value.\n"
+        "    --min-duration <value>\n"
+        "        Only include rides with a duration (in minutes) from the specified\n"
+        "        value.\n"        
         "    --output-format {csv|html|text}\n"
         "        Specifies the format of the output file with the list of routes.\n"
         "        If omitted, the plain text format is used by default.\n"
@@ -190,12 +198,24 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
                 fprintf(stderr, "Invalid max distance value: %s\n", val);
                 return -1;
             }
+        } else if (strcmp(arg, "--max-duration") == 0) {
+            val = argv[++n];
+            if (sscanf(val, "%d", &pArgs->maxDuration) != 1) {
+                fprintf(stderr, "Invalid max duration value: %s\n", val);
+                return -1;
+            }
         } else if (strcmp(arg, "--max-elevation-gain") == 0) {
             val = argv[++n];
             if (sscanf(val, "%d", &pArgs->maxElevGain) != 1) {
                 fprintf(stderr, "Invalid max elevation gain value: %s\n", val);
                 return -1;
             }
+        } else if (strcmp(arg, "--min-duration") == 0) {
+            val = argv[++n];
+            if (sscanf(val, "%d", &pArgs->minDuration) != 1) {
+                fprintf(stderr, "Invalid min duration value: %s\n", val);
+                return -1;
+            }            
         } else if (strcmp(arg, "--output-format") == 0) {
             val = argv[++n];
             if (strcmp(val, "csv") == 0) {
@@ -381,10 +401,19 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         // Ignore this ride...
         return -1;
     }
+    if ((pArgs->maxDuration != 0) && (pInfo->time/60 > pArgs->maxDuration)) {
+        // Ignore this ride...
+        return -1;
+    }        
     if ((pArgs->maxElevGain != 0) && (atoi(pInfo->elevation) > pArgs->maxElevGain)) {
         // Ignore this ride...
         return -1;
     }
+    if ((pArgs->minDuration != 0) && (pInfo->time/60 < pArgs->minDuration)) {
+        // Ignore this ride...
+        return -1;
+    }
+        
 
     return 0;
 }
