@@ -105,20 +105,17 @@ static char *fmtProvince(const char *location)
 
     return fmtBuf;
 }
-// A few routes include a comma in their description which
-// screws up the CSV output format...
-
-
-
+// The categories contain all the json parts
+// ["New", "Hilly", "etc" ]
 void remove_char(char *n, char *s, char c) {   
     while (*s) {                            
-        if (*s != c)                        // test if char is to be removed
-            *n++ = *s;                      // copy if not
-        s++;                                // advance source pointer
+        if (*s != c)
+            *n++ = *s;
+        s++;          
     }
-    *n = '\0';                              // terminate new string
+    *n = '\0';                             
 }
-void replace_char(char *n, char *s, char c, char nc) {   // renamed because remove() is predefined
+void replace_char(char *n, char *s, char c, char nc) { 
     while (*s) {                            
         if (*s == c) {                       
             *n++ = nc;
@@ -128,9 +125,8 @@ void replace_char(char *n, char *s, char c, char nc) {   // renamed because remo
             *n++ = *s++;
         }                      
     }
-    *n = '\0';                              // terminate new string
+    *n = '\0';                             
 }
-
 static char *fmtCategories(const char *categories)
 {
 //    char *p;
