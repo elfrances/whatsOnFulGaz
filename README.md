@@ -67,6 +67,10 @@ OPTIONS:
     --allrides-file <path>
         Specifies the path to the JSON file that describes all the available
         rides in the library.
+    --category <name>
+        Only include rides from the specified category. The name
+        match is case-insensitive and liberal: e.g. specifying "hill"
+        will match all rides contained in the category "Hilly".
     --contributor <name>
         Only include rides submitted by the specified contributor. The name
         match is case-insensitive and liberal: e.g. specifying "mourier"
