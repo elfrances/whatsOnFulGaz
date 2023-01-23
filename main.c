@@ -98,6 +98,10 @@ static const char *help =
         "    --allrides-file <path>\n"
         "        Specifies the path to the JSON file that describes all the available\n"
         "        rides in the library.\n"
+        "    --category <name>\n"
+        "        Only include rides from the specified category. The name\n"
+        "        match is case-insensitive and liberal: e.g. specifying \"hill\"\n"
+        "        will match all rides contained in the category \"Hilly\".\n"       
         "    --contributor <name>\n"
         "        Only include rides submitted by the specified contributor. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"mourier\"\n"
@@ -169,8 +173,10 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             exit(0);
         } else if (strcmp(arg, "--allrides-file") == 0) {
             pArgs->inFile = argv[++n];
+        } else if (strcmp(arg, "--category") == 0) {
+            pArgs->category = argv[++n];                        
         } else if (strcmp(arg, "--contributor") == 0) {
-            pArgs->contributor = argv[++n];
+            pArgs->contributor = argv[++n];            
         } else if (strcmp(arg, "--country") == 0) {
             pArgs->country = argv[++n];
         } else if (strcmp(arg, "--download-folder") == 0) {
@@ -381,6 +387,10 @@ static char *stristr(const char *s1, const char *s2 )
 
 static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
 {
+    if ((pArgs->category != NULL) && (stristr(pInfo->categories, pArgs->category) == NULL)) {
+        // Ignore this ride...
+        return -1;
+    }
     if ((pArgs->contributor != NULL) && (stristr(pInfo->contributor, pArgs->contributor) == NULL)) {
         // Ignore this ride...
         return -1;
