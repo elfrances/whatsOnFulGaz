@@ -68,9 +68,11 @@ OPTIONS:
         Specifies the path to the JSON file that describes all the available
         rides in the library.
     --category <name>
-        Only include rides from the specified category. The name
-        match is case-insensitive and liberal: e.g. specifying "hill"
-        will match all rides contained in the category "Hilly".
+        Only include rides from the specified category. The name match is
+        case-insensitive and liberal: e.g. specifying "hill" will match
+        all rides contained in the category "Hilly". FulGaz supports the
+        following categories: Avatar, Easy, Hilly, IRONMAN, Long, Loop,
+        Mountain, New, Race, Sightseeing, Trails.
     --contributor <name>
         Only include rides submitted by the specified contributor. The name
         match is case-insensitive and liberal: e.g. specifying "mourier"
@@ -98,9 +100,15 @@ OPTIONS:
     --max-elevation-gain <value>
         Only include rides with an elevation gain (in meters) up to the
         specified value.
-    --min-duration <value>
-        Only include rides with a duration (in minutes) from the specified
+    --min-distance <value>
+        Only include rides with a distance (in Km's) above the specified
         value.
+    --min-duration <value>
+        Only include rides with a duration (in minutes) above the specified
+        value.
+    --min-elevation-gain <value>
+        Only include rides with an elevation gain (in meters) above the
+        specified value.
     --output-format {csv|html|text}
         Specifies the format of the output file with the list of routes.
         If omitted, the plain text format is used by default.
@@ -156,6 +164,7 @@ $ ./whatsOnFulGaz --title zoncolan
     Country:         Italy
     Province/State:  Friuli-Venezia Giulia
     Contributor:     Hans Peter Obwaller
+    Categories:      Mountain
     Distance:        10.87
     Elevation Gain:  1175
     Duration:        01:00:14
@@ -170,6 +179,7 @@ $ ./whatsOnFulGaz --title zoncolan
     Country:         Italy
     Province/State:  Friuli-Venezia Giulia
     Contributor:     Hans Peter Obwaller
+    Categories:      Mountain
     Distance:        10.70
     Elevation Gain:  1176
     Duration:        00:59:03
@@ -184,6 +194,7 @@ $ ./whatsOnFulGaz --title zoncolan
     Country:         Italy
     Province/State:  Friuli-Venezia Giulia
     Contributor:     Hans Peter Obwaller
+    Categories:      Mountain
     Distance:        13.38
     Elevation Gain:  1154
     Duration:        00:59:26
@@ -235,6 +246,7 @@ $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mouri
     Country:         Argentina
     Province/State:  Cordoba
     Contributor:     Marcelo Mourier
+    Categories:      Hilly
     Distance:        19.02
     Elevation Gain:  653
     Duration:        01:09:40
@@ -249,6 +261,7 @@ $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mouri
     Country:         Argentina
     Province/State:  Cordoba
     Contributor:     Marcelo Mourier
+    Categories:      Easy
     Distance:        17.82
     Elevation Gain:  105
     Duration:        00:30:47

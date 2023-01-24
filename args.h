@@ -33,7 +33,9 @@ typedef struct CmdArgs {
     int getShiz;
     int dlProg;
     int maxDistance;
-    int maxElevGain;
-    int minDuration;
     int maxDuration;
+    int maxElevGain;
+    int minDistance;
+    int minDuration;
+    int minElevGain;
 } CmdArgs;

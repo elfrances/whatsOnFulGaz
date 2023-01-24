@@ -105,9 +105,9 @@ static char *fmtProvince(const char *location)
 
     return fmtBuf;
 }
-// The categories contain all the json parts
-// ["New", "Hilly", "etc" ]
-void remove_char(char *n, char *s, char c) {   
+
+static void remChar(char *n, char *s, char c)
+{
     while (*s) {                            
         if (*s != c)
             *n++ = *s;
@@ -115,7 +115,9 @@ void remove_char(char *n, char *s, char c) {
     }
     *n = '\0';                             
 }
-void replace_char(char *n, char *s, char c, char nc) { 
+
+static void repChar(char *n, char *s, char c, char nc)
+{
     while (*s) {                            
         if (*s == c) {                       
             *n++ = nc;
@@ -127,16 +129,18 @@ void replace_char(char *n, char *s, char c, char nc) {
     }
     *n = '\0';                             
 }
+
+// Format categories as Hilly/Long/New/etc
 static char *fmtCategories(const char *categories)
 {
 //    char *p;
     static char fmtBuf[128];
 
     snprintf(fmtBuf, sizeof (fmtBuf), "%s", categories);
-    remove_char(fmtBuf, fmtBuf, '[');
-    remove_char(fmtBuf, fmtBuf, ']');
-    remove_char(fmtBuf, fmtBuf, '"');
-    replace_char(fmtBuf, fmtBuf, ',', '/');
+    remChar(fmtBuf, fmtBuf, '[');
+    remChar(fmtBuf, fmtBuf, ']');
+    remChar(fmtBuf, fmtBuf, '"');
+    repChar(fmtBuf, fmtBuf, ',', '/');
     return fmtBuf;
 }
 

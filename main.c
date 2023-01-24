@@ -18,7 +18,7 @@
 #include "output.h"
 #include "routedb.h"
 
-#define PROGRAM_VERSION "1.2"
+#define PROGRAM_VERSION "1.3"
 
 /*
  * In FulGaz a route record is a JSON object with the
@@ -99,9 +99,11 @@ static const char *help =
         "        Specifies the path to the JSON file that describes all the available\n"
         "        rides in the library.\n"
         "    --category <name>\n"
-        "        Only include rides from the specified category. The name\n"
-        "        match is case-insensitive and liberal: e.g. specifying \"hill\"\n"
-        "        will match all rides contained in the category \"Hilly\".\n"       
+        "        Only include rides from the specified category. The name match is\n"
+        "        case-insensitive and liberal: e.g. specifying \"hill\" will match \n"
+        "        all rides contained in the category \"Hilly\". FulGaz supports the\n"
+        "        following categories: Avatar, Easy, Hilly, IRONMAN, Long, Loop,\n"
+        "        Mountain, New, Race, Sightseeing, Trails.\n"
         "    --contributor <name>\n"
         "        Only include rides submitted by the specified contributor. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"mourier\"\n"
@@ -129,9 +131,15 @@ static const char *help =
         "    --max-elevation-gain <value>\n"
         "        Only include rides with an elevation gain (in meters) up to the \n"
         "        specified value.\n"
+        "    --min-distance <value>\n"
+        "        Only include rides with a distance (in Km's) above the specified\n"
+        "        value.\n"
         "    --min-duration <value>\n"
-        "        Only include rides with a duration (in minutes) from the specified\n"
-        "        value.\n"        
+        "        Only include rides with a duration (in minutes) above the specified\n"
+        "        value.\n"
+        "    --min-elevation-gain <value>\n"
+        "        Only include rides with an elevation gain (in meters) above the \n"
+        "        specified value.\n"
         "    --output-format {csv|html|text}\n"
         "        Specifies the format of the output file with the list of routes.\n"
         "        If omitted, the plain text format is used by default.\n"
@@ -216,12 +224,24 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
                 fprintf(stderr, "Invalid max elevation gain value: %s\n", val);
                 return -1;
             }
+        } else if (strcmp(arg, "--min-distance") == 0) {
+            val = argv[++n];
+            if (sscanf(val, "%d", &pArgs->minDistance) != 1) {
+                fprintf(stderr, "Invalid min distance value: %s\n", val);
+                return -1;
+            }
         } else if (strcmp(arg, "--min-duration") == 0) {
             val = argv[++n];
             if (sscanf(val, "%d", &pArgs->minDuration) != 1) {
                 fprintf(stderr, "Invalid min duration value: %s\n", val);
                 return -1;
-            }            
+            }
+        } else if (strcmp(arg, "--min-elevation-gain") == 0) {
+            val = argv[++n];
+            if (sscanf(val, "%d", &pArgs->minElevGain) != 1) {
+                fprintf(stderr, "Invalid min elevation gain value: %s\n", val);
+                return -1;
+            }
         } else if (strcmp(arg, "--output-format") == 0) {
             val = argv[++n];
             if (strcmp(val, "csv") == 0) {
@@ -242,6 +262,20 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             fprintf(stderr, "Invalid option: %s\n", arg);
             return -1;
         }
+    }
+
+    // Sanity check the min/max values
+    if ((pArgs->maxDistance != 0) && (pArgs->minDistance > pArgs->maxDistance)) {
+        fprintf(stderr, "The minimum distance can't be greater than the maximum distance\n");
+        return -1;
+    }
+    if ((pArgs->maxDuration != 0) && (pArgs->minDuration > pArgs->maxDuration)) {
+        fprintf(stderr, "The minimum duration can't be greater than the maximum duration\n");
+        return -1;
+    }
+    if ((pArgs->maxElevGain != 0) && (pArgs->minElevGain > pArgs->maxElevGain)) {
+        fprintf(stderr, "The minimum elevation gain can't be greater than the maximum elevation gain\n");
+        return -1;
     }
 
     if (pArgs->inFile != NULL) {
@@ -407,23 +441,39 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         // Ignore this ride...
         return -1;
     }
-    if ((pArgs->maxDistance != 0) && (atoi(pInfo->distance) > pArgs->maxDistance)) {
-        // Ignore this ride...
-        return -1;
+    {
+        int distance = atoi(pInfo->distance);
+        if ((pArgs->maxDistance != 0) && (distance > pArgs->maxDistance)) {
+            // Ignore this ride...
+            return -1;
+        }
+        if ((pArgs->minDistance != 0) && (distance < pArgs->minDistance)) {
+            // Ignore this ride...
+            return -1;
+        }
     }
-    if ((pArgs->maxDuration != 0) && (pInfo->time/60 > pArgs->maxDuration)) {
-        // Ignore this ride...
-        return -1;
-    }        
-    if ((pArgs->maxElevGain != 0) && (atoi(pInfo->elevation) > pArgs->maxElevGain)) {
-        // Ignore this ride...
-        return -1;
+    {
+        int duration = pInfo->time / 60;
+        if ((pArgs->maxDuration != 0) && (duration > pArgs->maxDuration)) {
+            // Ignore this ride...
+            return -1;
+        }
+        if ((pArgs->minDuration != 0) && (duration < pArgs->minDuration)) {
+            // Ignore this ride...
+            return -1;
+        }
     }
-    if ((pArgs->minDuration != 0) && (pInfo->time/60 < pArgs->minDuration)) {
-        // Ignore this ride...
-        return -1;
+    {
+        int elevation = atoi(pInfo->elevation);
+        if ((pArgs->maxElevGain != 0) && (elevation > pArgs->maxElevGain)) {
+            // Ignore this ride...
+            return -1;
+        }
+        if ((pArgs->minElevGain != 0) && (elevation < pArgs->minElevGain)) {
+            // Ignore this ride...
+            return -1;
+        }
     }
-        
 
     return 0;
 }
