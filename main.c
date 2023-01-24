@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
+
 #include <unistd.h>
 
 #include <curl/curl.h>
@@ -96,6 +98,10 @@ static const char *help =
         "    --allrides-file <path>\n"
         "        Specifies the path to the JSON file that describes all the available\n"
         "        rides in the library.\n"
+        "    --category <name>\n"
+        "        Only include rides from the specified category. The name\n"
+        "        match is case-insensitive and liberal: e.g. specifying \"hill\"\n"
+        "        will match all rides contained in the category \"Hilly\".\n"       
         "    --contributor <name>\n"
         "        Only include rides submitted by the specified contributor. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"mourier\"\n"
@@ -117,9 +123,15 @@ static const char *help =
         "    --max-distance <value>\n"
         "        Only include rides with a distance (in Km's) up to the specified\n"
         "        value.\n"
+        "    --max-duration <value>\n"
+        "        Only include rides with a duration (in minutes) up to the specified\n"
+        "        value.\n"        
         "    --max-elevation-gain <value>\n"
         "        Only include rides with an elevation gain (in meters) up to the \n"
         "        specified value.\n"
+        "    --min-duration <value>\n"
+        "        Only include rides with a duration (in minutes) from the specified\n"
+        "        value.\n"        
         "    --output-format {csv|html|text}\n"
         "        Specifies the format of the output file with the list of routes.\n"
         "        If omitted, the plain text format is used by default.\n"
@@ -161,8 +173,10 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             exit(0);
         } else if (strcmp(arg, "--allrides-file") == 0) {
             pArgs->inFile = argv[++n];
+        } else if (strcmp(arg, "--category") == 0) {
+            pArgs->category = argv[++n];                        
         } else if (strcmp(arg, "--contributor") == 0) {
-            pArgs->contributor = argv[++n];
+            pArgs->contributor = argv[++n];            
         } else if (strcmp(arg, "--country") == 0) {
             pArgs->country = argv[++n];
         } else if (strcmp(arg, "--download-folder") == 0) {
@@ -190,12 +204,24 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
                 fprintf(stderr, "Invalid max distance value: %s\n", val);
                 return -1;
             }
+        } else if (strcmp(arg, "--max-duration") == 0) {
+            val = argv[++n];
+            if (sscanf(val, "%d", &pArgs->maxDuration) != 1) {
+                fprintf(stderr, "Invalid max duration value: %s\n", val);
+                return -1;
+            }
         } else if (strcmp(arg, "--max-elevation-gain") == 0) {
             val = argv[++n];
             if (sscanf(val, "%d", &pArgs->maxElevGain) != 1) {
                 fprintf(stderr, "Invalid max elevation gain value: %s\n", val);
                 return -1;
             }
+        } else if (strcmp(arg, "--min-duration") == 0) {
+            val = argv[++n];
+            if (sscanf(val, "%d", &pArgs->minDuration) != 1) {
+                fprintf(stderr, "Invalid min duration value: %s\n", val);
+                return -1;
+            }            
         } else if (strcmp(arg, "--output-format") == 0) {
             val = argv[++n];
             if (strcmp(val, "csv") == 0) {
@@ -361,6 +387,10 @@ static char *stristr(const char *s1, const char *s2 )
 
 static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
 {
+    if ((pArgs->category != NULL) && (stristr(pInfo->categories, pArgs->category) == NULL)) {
+        // Ignore this ride...
+        return -1;
+    }
     if ((pArgs->contributor != NULL) && (stristr(pInfo->contributor, pArgs->contributor) == NULL)) {
         // Ignore this ride...
         return -1;
@@ -381,10 +411,19 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         // Ignore this ride...
         return -1;
     }
+    if ((pArgs->maxDuration != 0) && (pInfo->time/60 > pArgs->maxDuration)) {
+        // Ignore this ride...
+        return -1;
+    }        
     if ((pArgs->maxElevGain != 0) && (atoi(pInfo->elevation) > pArgs->maxElevGain)) {
         // Ignore this ride...
         return -1;
     }
+    if ((pArgs->minDuration != 0) && (pInfo->time/60 < pArgs->minDuration)) {
+        // Ignore this ride...
+        return -1;
+    }
+        
 
     return 0;
 }

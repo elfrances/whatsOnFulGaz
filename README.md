@@ -67,6 +67,10 @@ OPTIONS:
     --allrides-file <path>
         Specifies the path to the JSON file that describes all the available
         rides in the library.
+    --category <name>
+        Only include rides from the specified category. The name
+        match is case-insensitive and liberal: e.g. specifying "hill"
+        will match all rides contained in the category "Hilly".
     --contributor <name>
         Only include rides submitted by the specified contributor. The name
         match is case-insensitive and liberal: e.g. specifying "mourier"
@@ -88,9 +92,15 @@ OPTIONS:
     --max-distance <value>
         Only include rides with a distance (in Km's) up to the specified
         value.
+    --max-duration <value>
+        Only include rides with a duration (in minutes) up to the specified
+        value.
     --max-elevation-gain <value>
         Only include rides with an elevation gain (in meters) up to the
         specified value.
+    --min-duration <value>
+        Only include rides with a duration (in minutes) from the specified
+        value.
     --output-format {csv|html|text}
         Specifies the format of the output file with the list of routes.
         If omitted, the plain text format is used by default.

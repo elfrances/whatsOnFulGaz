@@ -105,6 +105,42 @@ static char *fmtProvince(const char *location)
 
     return fmtBuf;
 }
+// The categories contain all the json parts
+// ["New", "Hilly", "etc" ]
+void remove_char(char *n, char *s, char c) {   
+    while (*s) {                            
+        if (*s != c)
+            *n++ = *s;
+        s++;          
+    }
+    *n = '\0';                             
+}
+void replace_char(char *n, char *s, char c, char nc) { 
+    while (*s) {                            
+        if (*s == c) {                       
+            *n++ = nc;
+            s++;
+        }
+        else {
+            *n++ = *s++;
+        }                      
+    }
+    *n = '\0';                             
+}
+static char *fmtCategories(const char *categories)
+{
+//    char *p;
+    static char fmtBuf[128];
+
+    snprintf(fmtBuf, sizeof (fmtBuf), "%s", categories);
+    remove_char(fmtBuf, fmtBuf, '[');
+    remove_char(fmtBuf, fmtBuf, ']');
+    remove_char(fmtBuf, fmtBuf, '"');
+    replace_char(fmtBuf, fmtBuf, ',', '/');
+    return fmtBuf;
+}
+
+
 
 // Format time as HH:MM:SS
 static char *fmtTime(int time)
@@ -125,6 +161,7 @@ static const char *cellName[] = {
         "Country",
         "Province/State",
         "Contributor",
+        "Categories", 
         "Distance",
         "Elevation Gain",
         "Duration",
@@ -150,6 +187,7 @@ void printCsvOutput(const RouteDB *pDb)
         printf("%s,", fmtCountry(pRoute->location));
         printf("%s,", fmtProvince(pRoute->location));
         printf("%s,", pRoute->contributor);
+        printf("%s,", fmtCategories(pRoute->categories));
         printf("%s,", pRoute->distance);
         printf("%s,", pRoute->elevation);
         printf("%s,", fmtTime(pRoute->time));
@@ -206,6 +244,7 @@ void printHttpOutput(const RouteDB *pDb)
         printStringCellValue(fmtCountry(pRoute->location), 0);
         printStringCellValue(fmtProvince(pRoute->location), 0);
         printStringCellValue(pRoute->contributor, 0);
+        printStringCellValue(fmtCategories(pRoute->categories), 0);
         printStringCellValue(pRoute->distance, 0);
         printStringCellValue(pRoute->elevation, 0);
         printStringCellValue(fmtTime(pRoute->time), 0);
@@ -236,6 +275,7 @@ void printTextOutput(const RouteDB *pDb)
         printf("    Country:         %s\n", fmtCountry(pRoute->location));
         printf("    Province/State:  %s\n", fmtProvince(pRoute->location));
         printf("    Contributor:     %s\n", pRoute->contributor);
+        printf("    Categories:      %s\n", fmtCategories(pRoute->categories));        
         printf("    Distance:        %s\n", pRoute->distance);
         printf("    Elevation Gain:  %s\n", pRoute->elevation);
         printf("    Duration:        %s\n", fmtTime(pRoute->time));
