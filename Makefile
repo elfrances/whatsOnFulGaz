@@ -48,7 +48,7 @@ whatsOnFulGaz: $(OBJECTS) Makefile
 	$(CC) $(LDFLAGS) -o $(BIN_DIR)/$@ $(OBJECTS) -lcurl
 
 clean:
-	$(RM) $(OBJECTS) $(OBJ_DIR)/build_info.o $(DEP_DIR)/*.d $(BIN_DIR)/whatsOnFulGaz
+	$(RM) $(OBJECTS) $(DEP_DIR)/*.d $(BIN_DIR)/whatsOnFulGaz
 
 include $(DEPS)
 

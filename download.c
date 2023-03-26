@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include <curl/curl.h>
 
@@ -15,11 +16,10 @@ static size_t writeOutputFileData(void *ptr, size_t size, size_t nmemb, void *st
 int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
 {
     char filePath[512];
+    struct stat statBuf;
     FILE *fp;
     CURL *ch;
     char errBuf[CURL_ERROR_SIZE];
-
-    printf("Downloading: %s ....\n", url);
 
     // If no outfile has been specified, use the URL's
     // basename as the output file name.
@@ -39,11 +39,21 @@ int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
         snprintf(filePath, sizeof (filePath), "%s", outFile);
     }
 
+    // See if the file already exists
+    if ((stat(filePath, &statBuf) == 0) &&
+        (statBuf.st_mode & S_IFREG) &&
+        (statBuf.st_size > 0)) {
+        printf("Skipping file %s because it already exists in the specified download folder.\n", outFile);
+        return 0;
+    }
+
     // Open the output file
     if ((fp = fopen(filePath, "wb")) == NULL) {
         fprintf(stderr, "ERROR: can't open output file \"%s\" (%s)\n", filePath, strerror(errno));
         return -1;
     }
+
+    printf("Downloading: %s ....\n", url);
 
     // Init the curl session
     ch = curl_easy_init();

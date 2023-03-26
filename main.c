@@ -18,7 +18,7 @@
 #include "output.h"
 #include "routedb.h"
 
-#define PROGRAM_VERSION "1.3"
+#define PROGRAM_VERSION "1.4"
 
 /*
  * In FulGaz a route record is a JSON object with the
