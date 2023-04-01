@@ -327,7 +327,7 @@ static OsTyp getOsType(void)
 // Locate the BizarMobile.FulGaz_xxxx install direcotry
 static char *getBizarMobilePath(OsTyp osTyp)
 {
-    char *userName;
+    char *userName = NULL;
     static char appInstDir[512];
 
     // Figure out our user name
