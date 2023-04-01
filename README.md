@@ -1,5 +1,5 @@
 # whatsOnFulGaz
-**FulGaz** is a popular multi-platform virtual cycling app. At the time of this writing, its library includes more than 2,000 routes in 56 different countries. A companion web applet https://whatsonfulgaz.com is used to interactively search the route library using a web browser.  
+**FulGaz** is a popular multi-platform virtual cycling app developed by Bizar Mobile. At the time of this writing, its library includes more than 2,000 routes in 56 different countries. A companion web applet https://whatsonfulgaz.com is used to interactively search the route library using a web browser.  
 
 **whatsOnFulGaz** is a simple command-line tool similar in functionality to the homonymous web applet, but intended to be used mostly in unattended batch mode. 
 
