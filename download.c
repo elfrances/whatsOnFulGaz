@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -13,13 +14,13 @@ static size_t writeOutputFileData(void *ptr, size_t size, size_t nmemb, void *st
     return written;
 }
 
-static size_t urlGetContentLength(const char *url, const char *dlFolder)
+static off_t urlGetContentLength(const char *url, const char *dlFolder)
 {
     char filePath[512];
     FILE *fp;
     CURL *ch;
     char errBuf[CURL_ERROR_SIZE];
-    size_t contentLength = 0;
+    off_t contentLength = 0;
 
     snprintf(filePath, sizeof (filePath), "%s/%s", dlFolder, "headerData.txt");
 
@@ -110,12 +111,12 @@ int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
     // See if the file already exists in the
     // download folder...
     if ((stat(filePath, &statBuf) == 0) && (statBuf.st_mode & S_IFREG)) {
-        size_t contentLength = urlGetContentLength(url, pArgs->dlFolder);
+        off_t contentLength = urlGetContentLength(url, pArgs->dlFolder);
         if (contentLength == statBuf.st_size) {
             printf("INFO: Skipping file %s because it already exists in the specified download folder.\n", outFile);
             return 0;
         } else {
-            printf("INFO: File %s already exists in the specified download folder, but with a different size: url=%zu file=%zu\n",
+            printf("INFO: File %s already exists in the specified download folder, but with a different size: url=%" PRId64 " file=%" PRId64 "\n",
                     outFile, contentLength, statBuf.st_size);
         }
     }

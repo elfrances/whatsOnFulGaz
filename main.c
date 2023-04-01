@@ -319,8 +319,10 @@ static char *getBizarMobilePath(OsTyp osTyp)
     // Figure out our user name
     if (osTyp == macOS) {
         userName = getenv("LOGNAME");
-    } else {
+    } else if (osTyp == windows) {
         userName = getenv("USERNAME");
+    } else if (osTyp == gnuLinux) {
+        userName = getenv("USER");
     }
     if (userName == NULL) {
         fprintf(stderr, "ERROR: can't determine user name (%s)\n", strerror(errno));
@@ -330,7 +332,7 @@ static char *getBizarMobilePath(OsTyp osTyp)
     if (osTyp == macOS) {
         snprintf(appInstDir, sizeof (appInstDir), "/Users/%s/Library/Containers/com.bizarmobile.fulgaz/", userName);
         return appInstDir;
-    } else {
+    } else if (osTyp == windows) {
         char packagesDir[80];
         DIR *dirp;
 
