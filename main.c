@@ -310,6 +310,20 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
     return 0;
 }
 
+static OsTyp getOsType(void)
+{
+    OsTyp osType = OS_TYPE;    // defined in the Makefile
+
+    if (osType == unk) {
+        // Running on macOS Darwin the Makefile ends up
+        // with OS_TYPE=0 so try to fix it here...
+        if (getenv("LOGNAME") != NULL)
+            osType = macOS;
+    }
+
+    return osType;
+}
+
 // Locate the BizarMobile.FulGaz_xxxx install direcotry
 static char *getBizarMobilePath(OsTyp osTyp)
 {
@@ -712,7 +726,7 @@ int main(int argc, char *argv[])
     }
 
     // Figure out the OS type
-    osTyp = OS_TYPE;    // OS_TYPE is defined in the Makefile!
+    osTyp = getOsType();
 
     if ((inFile.filePath = cmdArgs.inFile) == NULL) {
         char *appInstDir;

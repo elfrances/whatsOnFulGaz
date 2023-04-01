@@ -74,7 +74,7 @@ static off_t urlGetContentLength(const char *url, const char *dlFolder)
 
         while (fgets(lineBuf, sizeof (lineBuf), fp) != NULL) {
             //printf("%s", lineBuf);
-            if (sscanf(lineBuf, "content-length: %zu", &contentLength) == 1)
+            if (sscanf(lineBuf, "content-length: %" PRId64 "", &contentLength) == 1)
                 break;
         }
 
