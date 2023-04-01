@@ -18,7 +18,7 @@ typedef enum OsTyp {
     unk = 0,
     macOS = 1,
     windows = 2,
-    linux = 3,
+    gnuLinux = 3,
 } OsTyp;
 
 typedef struct CmdArgs {
