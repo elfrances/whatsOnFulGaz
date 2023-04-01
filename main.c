@@ -294,6 +294,9 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             fprintf(stderr, "Invalid download folder: %s\n", pArgs->dlFolder);
             return -1;
         }
+    } else {
+        // Download to the current directory
+        pArgs->dlFolder = ".";
     }
 
     if ((pArgs->outFmt == undef) && (pArgs->getVideo == none) && (pArgs->getShiz == 0)) {
@@ -654,7 +657,7 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 		const char *pData = data.start;
 		size_t dataLen = data.end - data.start;
 
-		// Process each route object in the "data" array
+		// Process each route object in the "data" array ...
 		while (jsonFindObject(pData, dataLen, pRouteObj) == 0) {
 			// Process this route object and add new
 			// entry into the Route DB...
@@ -689,8 +692,6 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 	return 0;
 }
 
-
-
 int main(int argc, char *argv[])
 {
     CmdArgs cmdArgs = {0};
@@ -709,11 +710,7 @@ int main(int argc, char *argv[])
     }
 
     // Figure out the OS type
-    if (getenv("WINDIR") != NULL) {
-        osTyp = windows;
-    } else {
-        osTyp = macOS;
-    }
+    osTyp = OS_TYPE;    // OS_TYPE is defined in the Makefile!
 
     if ((inFile.filePath = cmdArgs.inFile) == NULL) {
         char *appInstDir;
@@ -763,8 +760,6 @@ int main(int argc, char *argv[])
         close(fd);
     }
 
-    curl_global_init(CURL_GLOBAL_ALL);
-
     // Locate the main JSON object
 	if (jsonFindObject(inFile.data, inFile.dataLen, &mainObj) != 0) {
 		fprintf(stderr, "ERROR: can't find main JSON object!\n");
@@ -772,6 +767,11 @@ int main(int argc, char *argv[])
 	}
 
 	//jsonDumpObject(&mainObj);
+
+	if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+        fprintf(stderr, "ERROR: can't init CURL library!\n");
+        return -1;
+	}
 
 	// Process the main JSON object
 	procMainObj(&mainObj, &cmdArgs);
