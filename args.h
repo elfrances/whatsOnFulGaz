@@ -33,6 +33,7 @@ typedef struct CmdArgs {
     VidRes getVideo;
     int getShiz;
     int dlProg;
+    int dryRun;
     int maxDistance;
     int maxDuration;
     int maxElevGain;

@@ -15,11 +15,13 @@ The tool has the following features:
 
 # Building the tool
 
-**whatsOnFulGaz** is written entirely in C and only uses the well-known CURL library. The tool is known to build under Windows (Cygwin), macOS Ventura, and Ubuntu 22.04.
+**whatsOnFulGaz** is written entirely in C and only uses the well-known CURL library. The tool is known to build under Windows (Cygwin), macOS Ventura, Ubuntu 22.04, and Rocky Linux 9.
  
-To build the **whatsOnFulGaz** tool all you need to do is run 'make' at the top-level directory:
+To build the **whatsOnFulGaz** tool all you need to do is clone the repo from GitHub and run 'make' at the top-level directory:
 
 ```
+$ git clone https://github.com/elfrances/whatsOnFulGaz.git
+$ cd whatsOnFulGaz
 $ make
 cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o download.o -c download.c
 cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o json.o -c json.c
@@ -36,12 +38,20 @@ main.c:12:10: fatal error: curl/curl.h: No such file or directory
 
 How to install the CURL library depends on the OS you are using.
 
-- When using Windows (Cygwin) you need to install it via the Cygwin's "setup.exe" package management tool, and select the libcurl-devel, libcurl-doc, and libcurl4 packages, as shown [here](assets/cygwin_setup.png).  
+- When using Cygwin on Windows you need to install it via the Cygwin's "setup.exe" package management tool, and select the libcurl-devel, libcurl-doc, and libcurl4 packages, as shown [here](assets/cygwin_setup.png).
+  
 - When using Ubuntu you can install it using the "apt-get" command, as shown below:
 
 ```
 $ sudo apt-get install libcurl4
 $ sudo apt-get install libcurl4-openssl-dev
+```
+
+- When using Rocky Linux you can install it using the "apt-get" command, as shown below:
+
+```
+$ sudo yum install libcurl
+$ sudo yum install libcurl-devel
 ```
 
 # Usage
@@ -85,6 +95,9 @@ OPTIONS:
         Specifies the folder where the downloaded files are stored.
     --download-progress
         Show video download progress info.
+    --dry-run
+        Show what is going to be downloaded, without actually downloading
+        anything.
     --get-shiz
         Download the SHIZ control file of the ride.
     --get-video {720|1080|4k}
@@ -135,7 +148,29 @@ BUGS:
 
 # A note about running whatsOnFulGaz under Windows/Cygwin
 
-When running the tool under Windows/Cygwin notice that the drive letters used in path names, such as C: and D:, are replaced by the corresponding "cygdrive".  For example, the path "C:\Users\Marcelo\Documents" becomes "/cygdrive/c/Users/Marcelo/Documents", and the path "D:\FulGaz\Videos" becomes "/cygdrive/d/FulGaz/Videos".
+When running the tool under Windows/Cygwin notice that the drive letters used in path names, such as C: and D:, are replaced by the corresponding "cygdrive".  For example, the path:
+
+```
+C:\Users\Marcelo\Documents
+```
+
+becomes: 
+
+```
+/cygdrive/c/Users/Marcelo/Documents
+```
+
+and the path: 
+
+```
+D:\FulGaz\Videos
+```
+
+becomes: 
+
+```
+/cygdrive/d/FulGaz/Videos
+```
 
 # Example 1
 
@@ -208,7 +243,7 @@ $ ./whatsOnFulGaz --title zoncolan
 
 # Example 4
 
-Download the SHIZ control file of each of the rides filmed by Hans Peter Obwaller, and store them in the D:\FulGaz\Shiz folder:
+Download the SHIZ control file of each of the rides filmed by Hans Peter Obwaller, and store them in the folder D:\FulGaz\Shiz:
 
 ```
 $ ./whatsOnFulGaz --contributor obwaller --get-shiz --download-folder /cygdrive/d/FulGaz/Shiz/
@@ -222,7 +257,7 @@ Downloading: https://assets.fulgaz.com/Alpenvereinshutte-seg.shiz ....
 
 # Example 5
 
-Download the 1080p video file of each of the rides filmed by Rob Bennett in France (showing the file download progress), and store them in the D:\FulGaz\Videos folder:
+Download the 1080p video file of each of the rides filmed by Rob Bennett in France (showing the file download progress), and store them in the folder D:\FulGaz\Videos:
 
 ```
 $ ./whatsOnFulGaz --contributor bennett --country france --get-video 1080 --download-progress --download-folder /cygdrive/d/FulGaz/Videos/
@@ -237,7 +272,21 @@ Downloading: https://fulgaz.cachefly.net/file/fulgaz-videos/1080P/Tour-De-France
 
 # Example 6
 
-When running the **whatsOnFulGaz** tool on a system where the official **FulGaz** app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the **FulGaz** app is not installed or not supported (such as Ubuntu), one can manually specify the location of the JSON file using the ``--allrides-file <path>`` option:
+When using the **whatsOnFulGaz** tool to download the shiz and/or video files of a group of rides, and the download gets unexpectedly interrupted, you can simply re-run the tool to pick up where it left off, downloading only the remaining missing files, or the truncated files.  For example, the "Death Ride" challenge includes 5 rides, and assume the download gets interrupted while downloading the 4th ride "Ebbetts South Ascent". By re-running the tool, the first 3 rides are skipped, the 4th one is re-downloaded because it was truncated, and the 5th ride is downloaded as well, because it had not been downloaded during the first run: 
+
+```
+$ ./whatsOnFulGaz --category "death ride" --get-shiz --download-folder /cygdrive/d/FulGaz
+INFO: Skipping file Monitor-Pass-West-Ascent-seg.shiz because it already exists in the specified download folder.
+INFO: Skipping file Monitor-East-Ascent-seg.shiz because it already exists in the specified download folder.
+INFO: Skipping file Ebbetts-North-NEW-seg.shiz because it already exists in the specified download folder.
+Downloading: https://assets.fulgaz.com/Ebbetts-South-Ascent-seg.shiz ....
+INFO: File Carson-East-Ascent-seg.shiz already exists in the specified download folder, but with a different size: url=852570 file=8577
+Downloading: https://assets.fulgaz.com/Carson-East-Ascent-seg.shiz ....
+```
+
+# Example 7
+
+When running the **whatsOnFulGaz** tool on a system where the official **FulGaz** app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the **FulGaz** app is not installed or not supported (such as Ubuntu), one can still use the **whatsOnFulGaz** tool by manually specifying the location of the JSON file using the ``--allrides-file <path>`` option:
 
 ```
 $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mourier --title cuadrado
@@ -272,5 +321,23 @@ $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mouri
     SHIZ:            https://assets.fulgaz.com/Camino-Del-Cuadrado-Downhill-working-seg.2.shiz
 }
 ```
+
+# Example 8
+
+To see what the tool is going to download, without actually downloading anything, you can use the ``--dry-run`` option:
+
+```
+$ ./whatsOnFulGaz --category "IRONMAN" --get-shiz --download-folder /cygdrive/d/FulGaz --dry-run
+Would download: https://assets.fulgaz.com/kona-bike-2022-Avatar2.shiz ....
+Would download: https://assets.fulgaz.com/IM-Nur-Sultan-70.3.shiz ....
+Would download: https://assets.fulgaz.com/703-Acapulco-Bike.shiz ....
+     .
+     .
+     .
+Would download: https://assets.fulgaz.com/IM-Kona-Bike-Turnaround.shiz ....
+Would download: https://assets.fulgaz.com/kona-2022-part3.shiz ....
+Would download: https://assets.fulgaz.com/kona-2022-part4.shiz ....
+```
+
 
 

@@ -18,7 +18,7 @@
 #include "output.h"
 #include "routedb.h"
 
-#define PROGRAM_VERSION "1.4"
+#define PROGRAM_VERSION "1.5"
 
 /*
  * In FulGaz a route record is a JSON object with the
@@ -116,6 +116,9 @@ static const char *help =
         "        Specifies the folder where the downloaded files are stored.\n"
         "    --download-progress\n"
         "        Show video download progress info.\n"
+        "    --dry-run\n"
+        "        Show what is going to be downloaded, without actually downloading\n"
+        "        anything.\n"
         "    --get-shiz\n"
         "        Download the SHIZ control file of the ride.\n"
         "    --get-video {720|1080|4k}\n"
@@ -191,6 +194,8 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             pArgs->dlFolder = argv[++n];
         } else if (strcmp(arg, "--download-progress") == 0) {
             pArgs->dlProg = 1;
+        } else if (strcmp(arg, "--dry-run") == 0) {
+            pArgs->dryRun = 1;
         } else if (strcmp(arg, "--get-shiz") == 0) {
             pArgs->getShiz = 1;
         } else if (strcmp(arg, "--get-video") == 0) {
