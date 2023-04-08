@@ -286,7 +286,17 @@ Downloading: https://assets.fulgaz.com/Carson-East-Ascent-seg.shiz ....
 
 # Example 7
 
-When running the **whatsOnFulGaz** tool on a system where the official **FulGaz** app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the **FulGaz** app is not installed or not supported (such as Ubuntu), one can still use the **whatsOnFulGaz** tool by manually specifying the location of the JSON file using the ``--allrides-file <path>`` option:
+When running the **whatsOnFulGaz** tool on a system where the official **FulGaz** app is installed, the tool can automatically figure out the location of the JSON file that contains the list of available rides.  However, when running the app on a system where the **FulGaz** app is not installed or is not supported (such as Ubuntu), one can still use the **whatsOnFulGaz** tool by manually specifying the location of the JSON file using the ``--allrides-file <path>`` option. This JSON file can be copied over from a Windows PC or Mac where the **FulGaz** app is installed.  
+
+In Windows the path to this file is: 
+
+``C:\Users\Marcelo\AppData\Local\Packages\BizarMobile.FulGaz_asxhtrxdca8p2\LocalCache\Local\FulGaz\allrides_v4.json``
+
+And on macOS the path to the file is:
+
+``/Users/Marcelo/Library/Containers/com.bizarmobile.fulgaz/Data/Library/Application Support/FulGaz/allrides_v4.json``
+
+Of course, you'll have to replace ``Marcelo`` for your own Windows/macOS username in the above paths to find the file!
 
 ```
 $ ./whatsOnFulGaz --allrides-file Downloads/allrides_v4.json --contributor mourier --title cuadrado
