@@ -7,6 +7,7 @@ typedef struct RouteInfo {
 
     char *categories;   //
     char *contributor;  // Contributor
+    char *description;  // Description
     char *distance;     // Distance (in km)
     char *duration;     // Duration of the video (HH:MM:SS)
     char *elevation;    // Elevation gain (in meters)

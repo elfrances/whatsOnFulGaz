@@ -502,6 +502,27 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
     return 0;
 }
 
+static void strShiftLeft(char *str, size_t count)
+{
+    size_t len = strlen(str) + 1;
+    memmove(str, (str+count), (len - count));
+}
+
+static void cleanUpDescription(char *desc)
+{
+    char *p;
+
+    p = desc;
+    while ((p = strstr(p, "\\\"")) != NULL) {
+        strShiftLeft(p, 1);
+    }
+
+    p = desc;
+    while ((p = strstr(p, "\\n")) != NULL) {
+        strShiftLeft(p, 2);
+    }
+}
+
 static int procRouteObj(RouteDB *pDb, const JsonObject *pRoute, const CmdArgs *pArgs)
 {
 	RouteInfo info = {0};
@@ -528,31 +549,43 @@ static int procRouteObj(RouteDB *pDb, const JsonObject *pRoute, const CmdArgs *p
 				return -1;
 			}
 
+			// Duration
 			if (jsonGetStringValue(&metaObj, "dur", &info.duration) != 0) {
 				fprintf(stderr, "ERROR: failed to get \"dur\" value!\n");
 				return -1;
 			}
 
-			if (jsonGetStringValue(&metaObj, "dis", &info.distance) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"dis\" value!\n");
-				return -1;
-			}
+			// Distance
+            if (jsonGetStringValue(&metaObj, "dis", &info.distance) != 0) {
+                fprintf(stderr, "ERROR: failed to get \"dis\" value!\n");
+                return -1;
+            }
 
+            // Description
+            if (jsonGetStringValue(&metaObj, "des", &info.description) != 0) {
+                fprintf(stderr, "ERROR: failed to get \"des\" value!\n");
+                return -1;
+            }
+
+            // Elevation gain
 			if (jsonGetStringValue(&metaObj, "ele", &info.elevation) != 0) {
 				fprintf(stderr, "ERROR: failed to get \"ele\" value!\n");
 				return -1;
 			}
 
+			// Contributor
 			if (jsonGetStringValue(&metaObj, "con", &info.contributor) != 0) {
 				fprintf(stderr, "ERROR: failed to get \"con\" value!\n");
 				return -1;
 			}
 
+			// Toughness
 			if (jsonGetStringValue(&metaObj, "tou", &info.toughness) != 0) {
 				fprintf(stderr, "ERROR: failed to get \"tou\" value!\n");
 				return -1;
 			}
 
+			// Categories
 			if (jsonGetArrayValue(&metaObj, "cat", &info.categories) != 0) {
 				fprintf(stderr, "ERROR: failed to get \"cat\" value!\n");
 				return -1;
@@ -598,6 +631,7 @@ static int procRouteObj(RouteDB *pDb, const JsonObject *pRoute, const CmdArgs *p
 		JsonObject aObj = {0};
 
 		if (jsonFindObjByTag(pRoute, "a", &aObj) == 0) {
+		    // SHIZ control file
 			if (jsonGetStringValue(&aObj, "file", &info.shiz) != 0) {
 				fprintf(stderr, "ERROR: failed to get \"file\" value!\n");
 				return -1;
@@ -608,6 +642,9 @@ static int procRouteObj(RouteDB *pDb, const JsonObject *pRoute, const CmdArgs *p
 	if (applyMatchFilters(&info, pArgs) == 0) {
 		RouteInfo *pRoute;
 
+		// Clean up the description string
+		cleanUpDescription(info.description);
+
 		if ((pRoute = malloc(sizeof (RouteInfo))) == NULL) {
 			fprintf(stderr, "ERROR: failed to alloc route record!\n");
 			return -1;
@@ -615,9 +652,9 @@ static int procRouteObj(RouteDB *pDb, const JsonObject *pRoute, const CmdArgs *p
 
 		*pRoute = info;
 
+		// Add entry to the DB
 		TAILQ_INSERT_TAIL(&pDb->routeList, pRoute, tqEntry);
 
-		// Add entry to the DB
 		pDb->numRoutes++;
 	}
 
@@ -671,7 +708,8 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 		return -1;
 	}
 
-	// Get the "data":[] array of route objects
+	// Get the "data":[] array which contains all
+	// the route objects.
 	if (jsonFindArrayByTag(pObj, "data", &data) == 0) {
 		JsonObject routeObj = {0};
 		JsonObject *pRouteObj = &routeObj;
@@ -751,7 +789,7 @@ int main(int argc, char *argv[])
 
     //printf("Found rides file: %s\n", filePath);
 
-    // Read in the data
+    // Read in the entire file
     {
         int fd;
         struct stat stBuf = {0};

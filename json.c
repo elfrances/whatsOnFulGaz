@@ -77,12 +77,20 @@ int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal)
     if ((val = jsonFindTag(pObj, tag)) != NULL) {
         const char *openQuotes = strchr(val, '"');
         if (openQuotes != NULL) {
-            const char *endQuotes = strchr((openQuotes+1), '"');
-            if (endQuotes != NULL) {
-                char *str = stringify((openQuotes+1), (endQuotes - 1));
-                if (str != NULL) {
-                    *pVal = str;
-                    return 0;
+            for (const char *p = (openQuotes+1); p != pObj->end; p++) {
+                if (*p == '"') {
+                    if (*(p - 1) == '\\') {
+                        // This is an escaped double quote that
+                        // is part of the string value...
+                        continue;
+                    } else {
+                        const char *endQuotes = p;
+                        char *str = stringify((openQuotes+1), (endQuotes - 1));
+                        if (str != NULL) {
+                            *pVal = str;
+                            return 0;
+                        }
+                    }
                 }
             }
         }
