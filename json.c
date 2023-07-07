@@ -212,9 +212,26 @@ int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArra
     return -1;
 }
 
-// Process each element in the specified array
-int jsonForEach(const JsonArray *pArray, JsonCbHdlr handler)
+// Process each element object in the specified array
+int jsonArrayForEach(const JsonArray *pArray, JsonCbHdlr handler, void *arg)
 {
-    // TBD
+    const char *pData = pArray->start + 1;
+    size_t dataLen = pArray->end - pData;
+    JsonObject eleObj;
+
+    while (dataLen > 0) {
+        if (jsonFindObject(pData, dataLen, &eleObj) == 0) {
+            // Call the handler
+            if (handler(&eleObj, arg) != 0) {
+                // Oops!
+                return -1;
+            }
+            pData = eleObj.end + 1;
+            dataLen -= (eleObj.end - eleObj.start + 1);
+        } else {
+            break;
+        }
+    }
+
     return 0;
 }

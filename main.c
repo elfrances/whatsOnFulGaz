@@ -39,7 +39,7 @@
  * 			"country":"all",
  * 			"dur":"1:08:21",
  * 			"dis":"15.26",
- * 			"des":"A relatively easy 5% start, although on very hot south-facing slopes, with the toughest sections at more than 10% in the second half.  Filmed on the 2017 Étape du Tour.  Used on stage 18 of the 2017 Tour de France, the first rider over the summit at 2100m was Alexey Lutsenko (Astana) from Kazakhstan",
+ * 			"des":"A relatively easy 5% start, although on very hot south-facing slopes, with the toughest sections at more than 10% in the second half.  Filmed on the 2017 ï¿½tape du Tour.  Used on stage 18 of the 2017 Tour de France, the first rider over the summit at 2100m was Alexey Lutsenko (Astana) from Kazakhstan",
  * 			"cat":["Hilly"],
  * 			"ele":"682",
  * 			"tou":"473",
@@ -66,7 +66,7 @@
  * 			"lat":44.509897,
  * 			"lon":6.746794
  * 		},
- * 		"t":"Étape du Tour 2017 - Col de Vars from Saint-Paul-sur-Ubaye "
+ * 		"t":"ï¿½tape du Tour 2017 - Col de Vars from Saint-Paul-sur-Ubaye "
  * }
  *
  * File structure:
@@ -523,8 +523,16 @@ static void cleanUpDescription(char *desc)
     }
 }
 
-static int procRouteObj(RouteDB *pDb, const JsonObject *pRoute, const CmdArgs *pArgs)
+typedef struct CbInfo {
+    RouteDB *routeDb;
+    const CmdArgs *cmdArgs;
+} CbInfo;
+
+static int procRouteObj(const JsonObject *pRoute, void *arg)
 {
+    CbInfo *pInfo = arg;
+    RouteDB *pDb = pInfo->routeDb;
+    const CmdArgs *pArgs = pInfo->cmdArgs;
 	RouteInfo info = {0};
 
 	//jsonDumpObject(pRoute);
@@ -709,22 +717,14 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 	}
 
 	// Get the "data":[] array which contains all
-	// the route objects.
+	// the route objects in the library.
 	if (jsonFindArrayByTag(pObj, "data", &data) == 0) {
-		JsonObject routeObj = {0};
-		JsonObject *pRouteObj = &routeObj;
-		const char *pData = data.start;
-		size_t dataLen = data.end - data.start;
-
 		// Process each route object in the "data" array ...
-		while (jsonFindObject(pData, dataLen, pRouteObj) == 0) {
-			// Process this route object and add new
-			// entry into the Route DB...
-			procRouteObj(&routeDb, pRouteObj, pArgs);
-
-			pData = pRouteObj->end + 1;
-			dataLen -= (pRouteObj->end - pRouteObj->start);
-		}
+	    CbInfo cbInfo = { .routeDb = &routeDb, .cmdArgs = pArgs };
+	    if (jsonArrayForEach(&data, procRouteObj, &cbInfo) != 0) {
+	        // Error already printed
+	        return -1;
+	    }
 
 		//printf("numRoutes=%d\n", routeDb.numRoutes);
 

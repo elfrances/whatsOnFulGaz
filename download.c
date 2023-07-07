@@ -163,7 +163,7 @@ int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
         // Close the output file
         fclose(fp);
     } else {
-        printf("Would download: %s ....\n", url);
+        printf("Would download: %s ...\n", url);
     }
 
     return 0;

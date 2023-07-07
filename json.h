@@ -15,7 +15,7 @@ typedef struct JsonArray {
 } JsonArray;
 
 // Callback handler for the for-each iterator
-typedef int (*JsonCbHdlr)(const char *);
+typedef int (*JsonCbHdlr)(const JsonObject *, void *);
 
 // Locate the specified tag within the given JSON object and
 // return a pointer to its value: e.g.
@@ -52,5 +52,5 @@ int jsonFindObjByTag(const JsonObject *pObj, const char *tag, JsonObject *pEmbOb
 int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArray);
 
 // Process each element in the specified array
-int jsonForEach(const JsonArray *pArray, JsonCbHdlr handler);
+int jsonArrayForEach(const JsonArray *pArray, JsonCbHdlr handler, void *arg);
 
