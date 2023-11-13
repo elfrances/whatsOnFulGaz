@@ -18,7 +18,12 @@
 #include "output.h"
 #include "routedb.h"
 
-#define PROGRAM_VERSION "1.5"
+typedef struct AllRidesFile {
+    char filePath[1024];
+    time_t fileDate;
+} AllRidesFile;
+
+#define PROGRAM_VERSION "1.6"
 
 /*
  * In FulGaz a route record is a JSON object with the
@@ -379,35 +384,45 @@ static char *getBizarMobilePath(OsTyp osTyp)
     return NULL;
 }
 
-static char *getFilePath(const char *appInstDir, OsTyp osTyp)
+static int getFilePath(const char *appInstDir, OsTyp osTyp, AllRidesFile *allRides)
 {
-    static char filePath[1024];
     const char *fileName = "allrides_v4.json";
     struct stat stBuf = {0};
+
+    allRides->filePath[0] = '\0';
+    allRides->fileDate = 0;
 
     // The path to the allrides_v4.json file depends on
     // the OS and the version of the app being used...
 
     if (osTyp == macOS) {
         // macOS app version 4.3.x: appInstDir/Data/Library/Application Support/FulGaz/allrides_v4.json
-        snprintf(filePath, sizeof (filePath), "%sData/Library/Application Support/FulGaz/%s", appInstDir, fileName);
-        return filePath;
+        snprintf(allRides->filePath, sizeof (allRides->filePath), "%sData/Library/Application Support/FulGaz/%s", appInstDir, fileName);
+        if ((stat(allRides->filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode)) {
+            allRides->fileDate = stBuf.st_atim.tv_sec;
+            return 0;
+        }
+        return 0;
     } else {
         // Windows app version 4.2.x:  appInstDir/LocalState/allrides_v4.json
-        // Windows app version 4.50.x: appInstDir/LocalCache/Local/FulGaz/allrides_v4.json
+        // Windows app version 4.50.x and 5.0.x: appInstDir/LocalCache/Local/FulGaz/allrides_v4.json
 
-        // Try 4.50.x ...
-        snprintf(filePath, sizeof (filePath), "%sLocalCache/Local/FulGaz/%s", appInstDir, fileName);
-        if ((stat(filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode))
-            return filePath;
+        // Try 4.50.x and 5.0.x ...
+        snprintf(allRides->filePath, sizeof (allRides->filePath), "%sLocalCache/Local/FulGaz/%s", appInstDir, fileName);
+        if ((stat(allRides->filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode)) {
+            allRides->fileDate = stBuf.st_atim.tv_sec;
+            return 0;
+        }
 
         // Try 4.2.x ...
-        snprintf(filePath, sizeof (filePath), "%sLocalState/%s", appInstDir, fileName);
-        if ((stat(filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode))
-            return filePath;
+        snprintf(allRides->filePath, sizeof (allRides->filePath), "%sLocalState/%s", appInstDir, fileName);
+        if ((stat(allRides->filePath, &stBuf) == 0) && S_ISREG(stBuf.st_mode)) {
+            allRides->fileDate = stBuf.st_atim.tv_sec;
+            return 0;
+        }
     }
 
-    return NULL;
+    return -1;
 }
 
 // Cygwin doesn't have this one
@@ -755,6 +770,7 @@ int main(int argc, char *argv[])
 {
     CmdArgs cmdArgs = {0};
     OsTyp osTyp = unk;
+    AllRidesFile allRides = {0};
 	struct InFile {
         const char *filePath;
         char *data;
@@ -781,9 +797,18 @@ int main(int argc, char *argv[])
         }
 
         // Figure out the full path to the allrides_v4.json file
-        if ((inFile.filePath = getFilePath(appInstDir, osTyp)) == NULL) {
-            fprintf(stderr, "ERROR: can't get file path (%s)\n", strerror(errno));
+        if (getFilePath(appInstDir, osTyp, &allRides) != 0) {
+            fprintf(stderr, "ERROR: can't find rides directory file (%s)\n", strerror(errno));
             return -1;
+        }
+
+        inFile.filePath = allRides.filePath;
+
+        {
+            struct tm brkDwnTime = {0};
+            char dateAndTimeBuf[128];
+            strftime(dateAndTimeBuf, sizeof (dateAndTimeBuf), "%Y-%m-%dT%H:%M:%S", gmtime_r(&allRides.fileDate, &brkDwnTime));
+            printf("Found rides directory file at: \"%s\" and dated: %s ...\n", inFile.filePath, dateAndTimeBuf);
         }
     }
 
