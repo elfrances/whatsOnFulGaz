@@ -14,11 +14,16 @@ typedef enum VidRes {
     res4K = 3,
 } VidRes;
 
+#define OS_TYPE_UNDEF  0
+#define OS_TYPE_MACOS  1
+#define OS_TYPE_CYGWIN 2
+#define OS_TYPE_LINUX  3
+
 typedef enum OsTyp {
-    unk = 0,
-    macOS = 1,
-    windows = 2,
-    gnuLinux = 3,
+    unk = OS_TYPE_UNDEF,
+    macOS = OS_TYPE_MACOS,
+    cygwin = OS_TYPE_CYGWIN,
+    gnuLinux = OS_TYPE_LINUX,
 } OsTyp;
 
 typedef struct CmdArgs {

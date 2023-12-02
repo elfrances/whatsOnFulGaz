@@ -18,6 +18,11 @@
 #include "output.h"
 #include "routedb.h"
 
+#if (OS_TYPE == OS_TYPE_MACOS)
+#undef st_atim
+#define st_atim st_atimespec
+#endif
+
 typedef struct AllRidesFile {
     char filePath[1024];
     time_t fileDate;
@@ -343,7 +348,7 @@ static char *getBizarMobilePath(OsTyp osTyp)
     // Figure out our user name
     if (osTyp == macOS) {
         userName = getenv("LOGNAME");
-    } else if (osTyp == windows) {
+    } else if (osTyp == cygwin) {
         userName = getenv("USERNAME");
     } else if (osTyp == gnuLinux) {
         userName = getenv("USER");
@@ -356,7 +361,7 @@ static char *getBizarMobilePath(OsTyp osTyp)
     if (osTyp == macOS) {
         snprintf(appInstDir, sizeof (appInstDir), "/Users/%s/Library/Containers/com.bizarmobile.fulgaz/", userName);
         return appInstDir;
-    } else if (osTyp == windows) {
+    } else if (osTyp == cygwin) {
         char packagesDir[80];
         DIR *dirp;
 
