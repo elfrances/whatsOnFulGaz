@@ -823,7 +823,7 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
         }
 
         if (pArgs->dryRun) {
-            printf("Total download size: %.3lf GB\n", (totalContentLength / 1073741824.0));
+            printf("TOTAL DOWNLOAD SIZE: %s\n", fmtContentLength(totalContentLength));
         }
 	}
 

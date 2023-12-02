@@ -12,16 +12,19 @@ uint64_t totalContentLength;
 
 static const double oneGB = (1024*1024*1024);
 static const double oneMB = (1024*1024);
+static const double oneKB = (1024);
 
-static char *fmtContentLength(off_t contentLength)
+char *fmtContentLength(uint64_t contentLength)
 {
     double len = contentLength;
     static char fmtBuf[16];
 
     if (len > oneGB) {
         snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf GB", (len / oneGB));
-    } else {
+    } else if (len > oneMB) {
         snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf MB", (len / oneMB));
+    } else {
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf KB", (len / oneKB));
     }
 
     return fmtBuf;
