@@ -28,7 +28,7 @@ typedef struct AllRidesFile {
     time_t fileDate;
 } AllRidesFile;
 
-#define PROGRAM_VERSION "1.6"
+#define PROGRAM_VERSION "1.7"
 
 /*
  * In FulGaz a route record is a JSON object with the
@@ -112,8 +112,8 @@ static const char *help =
         "        Only include rides from the specified category. The name match is\n"
         "        case-insensitive and liberal: e.g. specifying \"hill\" will match \n"
         "        all rides contained in the category \"Hilly\". FulGaz supports the\n"
-        "        following categories: Avatar, Easy, Hilly, IRONMAN, Long, Loop,\n"
-        "        Mountain, New, Race, Sightseeing, Trails.\n"
+        "        following categories: Easy, Hilly, IRONMAN, Long, Loop, Mountain,\n"
+        "        New, Race, Sightseeing, Trails, Trending.\n"
         "    --contributor <name>\n"
         "        Only include rides submitted by the specified contributor. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"mourier\"\n"
@@ -136,23 +136,19 @@ static const char *help =
         "    --help\n"
         "        Show this help and exit.\n"
         "    --max-distance <value>\n"
-        "        Only include rides with a distance (in Km's) up to the specified\n"
-        "        value.\n"
+        "        Only include rides with a distance up to the specified value.\n"
         "    --max-duration <value>\n"
         "        Only include rides with a duration (in minutes) up to the specified\n"
         "        value.\n"        
         "    --max-elevation-gain <value>\n"
-        "        Only include rides with an elevation gain (in meters) up to the \n"
-        "        specified value.\n"
+        "        Only include rides with an elevation gain up to the specified value.\n"
         "    --min-distance <value>\n"
-        "        Only include rides with a distance (in Km's) above the specified\n"
-        "        value.\n"
+        "        Only include rides with a distance above the specified value.\n"
         "    --min-duration <value>\n"
         "        Only include rides with a duration (in minutes) above the specified\n"
         "        value.\n"
         "    --min-elevation-gain <value>\n"
-        "        Only include rides with an elevation gain (in meters) above the \n"
-        "        specified value.\n"
+        "        Only include rides with an elevation gain above the specified value.\n"
         "    --output-format {csv|html|text}\n"
         "        Specifies the format of the output file with the list of routes.\n"
         "        If omitted, the plain text format is used by default.\n"
@@ -165,10 +161,17 @@ static const char *help =
         "        match is case-insensitive and liberal: e.g. specifying \"gavia\"\n"
         "        will match the rides \"Passo di Gavia\", \"Passo di Gavia Sweet\n"
         "        Spot\", and \"Passo di Gavia from Ponte di Legno\".\n"
+        "    --units {imperial|metric}\n"
+        "        Specifies the system of units to use to represent the input/output\n"
+        "        data: \"imperial\" uses feet and miles, while \"metric\" uses meters\n"
+        "        and kilometers. If omitted, the metric system is used by default.\n"
         "    --version\n"
         "        Show program's version info and exit.\n"
         "\n"
         "NOTES:\n"
+        "    The specified min/max distance values and min/man elevation gain values\n"
+        "    are interpreted based on the value of the \"--units\" option.\n"
+        "\n"
         "    Running the tool under Windows/Cygwin the drive letters are replaced by\n"
         "    their equivalent cygdrive: e.g. the path \"C:\\Users\\Marcelo\\Documents\"\n"
         "    becomes \"/cygdrive/c/Users/Marcelo/Documents\".\n"
@@ -176,9 +179,49 @@ static const char *help =
         "BUGS:\n"
         "    Report bugs and enhancement requests to: marcelo_mourier@yahoo.com\n";
 
+static int parseDistanceVal(const char *str, int *val, Units units)
+{
+    int value;
+
+    if (sscanf(str, "%d", &value) == 1) {
+        if (units == imperial) {
+            value = value * 1609;   // Convert miles to meters
+        } else {
+            value = value * 1000;   // Convert kilometers to meters
+        }
+        *val = value;
+        return 0;
+    }
+
+    return -1;
+}
+
+static int parseElevGainVal(const char *str, int *val, Units units)
+{
+    int value;
+
+    if (sscanf(str, "%d", &value) == 1) {
+        if (units == imperial) {
+            value = value * 305;    // Convert feet to millimeters
+        } else {
+            value = value * 1000;   // Convert meters to millimeters
+        }
+        *val = value;
+        return 0;
+    }
+
+    return -1;
+}
+
 static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
 {
     int numArgs = argc - 1;
+
+    pArgs->maxDistance = INT_MIN;
+    pArgs->maxElevGain = INT_MIN;
+    pArgs->minDistance = INT_MAX;
+    pArgs->minElevGain = INT_MAX;
+    pArgs->units = metric;
 
     for (int n = 1; n <= numArgs; n++) {
         const char *arg;
@@ -223,7 +266,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             }
         } else if (strcmp(arg, "--max-distance") == 0) {
             val = argv[++n];
-            if (sscanf(val, "%d", &pArgs->maxDistance) != 1) {
+            if (parseDistanceVal(val, &pArgs->maxDistance, pArgs->units) != 0) {
                 fprintf(stderr, "Invalid max distance value: %s\n", val);
                 return -1;
             }
@@ -235,13 +278,13 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             }
         } else if (strcmp(arg, "--max-elevation-gain") == 0) {
             val = argv[++n];
-            if (sscanf(val, "%d", &pArgs->maxElevGain) != 1) {
+            if (parseElevGainVal(val, &pArgs->maxElevGain, pArgs->units) != 0) {
                 fprintf(stderr, "Invalid max elevation gain value: %s\n", val);
                 return -1;
             }
         } else if (strcmp(arg, "--min-distance") == 0) {
             val = argv[++n];
-            if (sscanf(val, "%d", &pArgs->minDistance) != 1) {
+            if (parseDistanceVal(val, &pArgs->minDistance, pArgs->units) != 0) {
                 fprintf(stderr, "Invalid min distance value: %s\n", val);
                 return -1;
             }
@@ -253,7 +296,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             }
         } else if (strcmp(arg, "--min-elevation-gain") == 0) {
             val = argv[++n];
-            if (sscanf(val, "%d", &pArgs->minElevGain) != 1) {
+            if (parseElevGainVal(val, &pArgs->minElevGain, pArgs->units) != 0) {
                 fprintf(stderr, "Invalid min elevation gain value: %s\n", val);
                 return -1;
             }
@@ -273,6 +316,16 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             pArgs->province = argv[++n];
         } else if (strcmp(arg, "--title") == 0) {
             pArgs->title = argv[++n];
+        } else if (strcmp(arg, "--units") == 0) {
+            val = argv[++n];
+            if (strcmp(val, "imperial") == 0) {
+                pArgs->units = imperial;
+            } else if (strcmp(val, "metric") == 0) {
+                pArgs->units = metric;
+            } else {
+                fprintf(stderr, "Invalid units system: %s\n", val);
+                return -1;
+            }
         } else {
             fprintf(stderr, "Invalid option: %s\n", arg);
             return -1;
@@ -280,7 +333,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
     }
 
     // Sanity check the min/max values
-    if ((pArgs->maxDistance != 0) && (pArgs->minDistance > pArgs->maxDistance)) {
+    if ((pArgs->maxDistance != INT_MIN) && (pArgs->minDistance > pArgs->maxDistance)) {
         fprintf(stderr, "The minimum distance can't be greater than the maximum distance\n");
         return -1;
     }
@@ -288,7 +341,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         fprintf(stderr, "The minimum duration can't be greater than the maximum duration\n");
         return -1;
     }
-    if ((pArgs->maxElevGain != 0) && (pArgs->minElevGain > pArgs->maxElevGain)) {
+    if ((pArgs->maxElevGain != INT_MIN) && (pArgs->minElevGain > pArgs->maxElevGain)) {
         fprintf(stderr, "The minimum elevation gain can't be greater than the maximum elevation gain\n");
         return -1;
     }
@@ -486,12 +539,12 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         return -1;
     }
     {
-        int distance = atoi(pInfo->distance);
-        if ((pArgs->maxDistance != 0) && (distance > pArgs->maxDistance)) {
+        int distance = atoi(pInfo->distance) * 1000;    // distance in meters
+        if ((pArgs->maxDistance != INT_MIN) && (distance > pArgs->maxDistance)) {
             // Ignore this ride...
             return -1;
         }
-        if ((pArgs->minDistance != 0) && (distance < pArgs->minDistance)) {
+        if ((pArgs->minDistance != INT_MAX) && (distance < pArgs->minDistance)) {
             // Ignore this ride...
             return -1;
         }
@@ -508,12 +561,12 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         }
     }
     {
-        int elevation = atoi(pInfo->elevation);
-        if ((pArgs->maxElevGain != 0) && (elevation > pArgs->maxElevGain)) {
+        int elevation = atoi(pInfo->elevation) * 1000;  // elevation gain in millimeters
+        if ((pArgs->maxElevGain != INT_MIN) && (elevation > pArgs->maxElevGain)) {
             // Ignore this ride...
             return -1;
         }
-        if ((pArgs->minElevGain != 0) && (elevation < pArgs->minElevGain)) {
+        if ((pArgs->minElevGain != INT_MAX) && (elevation < pArgs->minElevGain)) {
             // Ignore this ride...
             return -1;
         }
@@ -583,7 +636,7 @@ static int procRouteObj(const JsonObject *pRoute, void *arg)
 				return -1;
 			}
 
-			// Distance
+			// Distance in kilometers
             if (jsonGetStringValue(&metaObj, "dis", &info.distance) != 0) {
                 fprintf(stderr, "ERROR: failed to get \"dis\" value!\n");
                 return -1;
@@ -595,7 +648,7 @@ static int procRouteObj(const JsonObject *pRoute, void *arg)
                 return -1;
             }
 
-            // Elevation gain
+            // Elevation gain in meters
 			if (jsonGetStringValue(&metaObj, "ele", &info.elevation) != 0) {
 				fprintf(stderr, "ERROR: failed to get \"ele\" value!\n");
 				return -1;
@@ -750,11 +803,11 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 
 		// Create output file
 		if (pArgs->outFmt == csv) {
-		    printCsvOutput(&routeDb);
+		    printCsvOutput(&routeDb, pArgs);
         } else if (pArgs->outFmt == html) {
-            printHttpOutput(&routeDb);
+            printHttpOutput(&routeDb, pArgs);
         } else if (pArgs->outFmt == text) {
-            printTextOutput(&routeDb);
+            printTextOutput(&routeDb, pArgs);
         }
 
         // If requested, download the SHIZ control files

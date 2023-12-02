@@ -26,6 +26,11 @@ typedef enum OsTyp {
     gnuLinux = OS_TYPE_LINUX,
 } OsTyp;
 
+typedef enum Units {
+    imperial = 1,
+    metric = 2,
+} Units;
+
 typedef struct CmdArgs {
     const char *inFile;
     const char *category;
@@ -36,6 +41,7 @@ typedef struct CmdArgs {
     const char *dlFolder;
     OutFmt outFmt;
     VidRes getVideo;
+    Units units;
     int getShiz;
     int dlProg;
     int dryRun;

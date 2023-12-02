@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "args.h"
@@ -133,7 +134,6 @@ static void repChar(char *n, char *s, char c, char nc)
 // Format categories as Hilly/Long/New/etc
 static char *fmtCategories(const char *categories)
 {
-//    char *p;
     static char fmtBuf[128];
 
     snprintf(fmtBuf, sizeof (fmtBuf), "%s", categories);
@@ -144,7 +144,33 @@ static char *fmtCategories(const char *categories)
     return fmtBuf;
 }
 
+// Format distance
+static char *fmtDistance(const char *distance, Units units)
+{
+    static char fmtBuf[32];
 
+    if (units == metric) {
+        snprintf(fmtBuf, sizeof (fmtBuf), "%s", distance);
+    } else {
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf", (atof(distance) / 1.60934));
+    }
+
+    return fmtBuf;
+}
+
+// Format elevation gain
+static char *fmtElevGain(const char *elevGain, Units units)
+{
+    static char fmtBuf[32];
+
+    if (units == metric) {
+        snprintf(fmtBuf, sizeof (fmtBuf), "%s", elevGain);
+    } else {
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf", (atof(elevGain) * 3.28083));
+    }
+
+    return fmtBuf;
+}
 
 // Format time as HH:MM:SS
 static char *fmtTime(int time)
@@ -160,30 +186,52 @@ static char *fmtTime(int time)
     return fmtBuf;
 }
 
+typedef enum CellName {
+    name = 1,
+    country,
+    provinceState,
+    contributor,
+    categories,
+    description,
+    distance,
+    elevationGain,
+    duration,
+    toughnessScore,
+    video720p,
+    video1080p,
+    video4K,
+    shiz,
+} CellName;
+
 static const char *cellName[] = {
-        "Name",
-        "Country",
-        "Province/State",
-        "Contributor",
-        "Categories",
-        "Description",
-        "Distance",
-        "Elevation Gain",
-        "Duration",
-        "Toughness Score",
-        "720p Video",
-        "1080p Video",
-        "4K Video",
-        "SHIZ",
-        NULL
+        [name] = "Name",
+        [country] = "Country",
+        [provinceState] = "Province/State",
+        [contributor] = "Contributor",
+        [categories] = "Categories",
+        [description] = "Description",
+        [distance] = "Distance",
+        [elevationGain] = "Elevation Gain",
+        [duration] = "Duration",
+        [toughnessScore] = "Toughness Score",
+        [video720p] = "720p Video",
+        [video1080p] = "1080p Video",
+        [video4K] = "4K Video",
+        [shiz] = "SHIZ",
 };
 
-void printCsvOutput(const RouteDB *pDb)
+void printCsvOutput(const RouteDB *pDb, const CmdArgs *pArgs)
 {
     RouteInfo *pRoute;
 
-    for (int n = 0; cellName[n] != NULL; n++) {
-        printf("%s,", cellName[n]);
+    for (CellName n = name; n <= shiz ; n++) {
+        if (n == distance) {
+            printf("%s [%s],", cellName[n], (pArgs->units == metric) ? "km" : "mi");
+        } else if (n == elevationGain) {
+            printf("%s [%s],", cellName[n], (pArgs->units == metric) ? "m" : "ft");
+        } else {
+            printf("%s,", cellName[n]);
+        }
     }
     printf("\n");
 
@@ -194,8 +242,8 @@ void printCsvOutput(const RouteDB *pDb)
         printf("%s,", pRoute->contributor);
         printf("%s,", fmtCategories(pRoute->categories));
         printf("%s,", pRoute->description);
-        printf("%s,", pRoute->distance);
-        printf("%s,", pRoute->elevation);
+        printf("%s,", fmtDistance(pRoute->distance, pArgs->units));
+        printf("%s,", fmtElevGain(pRoute->elevation, pArgs->units));
         printf("%s,", fmtTime(pRoute->time));
         printf("%s,", pRoute->toughness);
         printf("%s%s,", pDb->mp4UrlPfx, pRoute->vim720);
@@ -224,7 +272,7 @@ static void printHyperlinkCellValue(const char *string)
     printf("                </td>\n");
 }
 
-void printHttpOutput(const RouteDB *pDb)
+void printHttpOutput(const RouteDB *pDb, const CmdArgs *pArgs)
 {
     RouteInfo *pRoute;
 
@@ -235,12 +283,20 @@ void printHttpOutput(const RouteDB *pDb)
     printf("    </head>\n");
     printf("    <body lang=\"en-US\" link=\"#000080\" vlink=\"#800000\" dir=\"ltr\">\n");
     printf("        <table width=\"100%%\" cellpadding=\"4\" cellspacing=\"0\">\n");
-    for (int n = 0; cellName[n] != NULL; n++) {
+    for (CellName n = name; n <= shiz ; n++) {
         printf("            <col width=\"26*\"/>\n");
     }
     printf("            <tr valign=\"top\">\n");
-    for (int n = 0; cellName[n] != NULL; n++) {
-        printStringCellValue(cellName[n], 1);
+    for (CellName n = name; n <= shiz ; n++) {
+        char label[64];
+        if (n == distance) {
+            snprintf(label, sizeof (label), "%s [%s]", cellName[n], (pArgs->units == metric) ? "km" : "mi");
+        } else if (n == elevationGain) {
+            snprintf(label, sizeof (label), "%s [%s]", cellName[n], (pArgs->units == metric) ? "m" : "ft");
+        } else {
+            snprintf(label, sizeof (label), "%s", cellName[n]);
+        }
+        printStringCellValue(label, 1);
     }
     printf("            </tr>\n");
     TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
@@ -252,8 +308,8 @@ void printHttpOutput(const RouteDB *pDb)
         printStringCellValue(pRoute->contributor, 0);
         printStringCellValue(fmtCategories(pRoute->categories), 0);
         printStringCellValue(pRoute->description, 0);
-        printStringCellValue(pRoute->distance, 0);
-        printStringCellValue(pRoute->elevation, 0);
+        printStringCellValue(fmtDistance(pRoute->distance, pArgs->units), 0);
+        printStringCellValue(fmtElevGain(pRoute->elevation, pArgs->units), 0);
         printStringCellValue(fmtTime(pRoute->time), 0);
         printStringCellValue(pRoute->toughness, 0);
         snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vim720);
@@ -271,7 +327,7 @@ void printHttpOutput(const RouteDB *pDb)
     printf("</html>\n");
 }
 
-void printTextOutput(const RouteDB *pDb)
+void printTextOutput(const RouteDB *pDb, const CmdArgs *pArgs)
 {
     RouteInfo *pRoute;
 
@@ -284,8 +340,8 @@ void printTextOutput(const RouteDB *pDb)
         printf("    Contributor:     %s\n", pRoute->contributor);
         printf("    Categories:      %s\n", fmtCategories(pRoute->categories));
         printf("    Description:     %s\n", pRoute->description);
-        printf("    Distance:        %s\n", pRoute->distance);
-        printf("    Elevation Gain:  %s\n", pRoute->elevation);
+        printf("    Distance:        %s %s\n", fmtDistance(pRoute->distance, pArgs->units), (pArgs->units == metric) ? "km" : "mi");
+        printf("    Elevation Gain:  %s %s\n", fmtElevGain(pRoute->elevation, pArgs->units), (pArgs->units == metric) ? "m" : "ft");
         printf("    Duration:        %s\n", fmtTime(pRoute->time));
         printf("    Toughness Score: %s\n", pRoute->toughness);
         snprintf(link, sizeof (link), "%s%s", pDb->mp4UrlPfx, pRoute->vim720);
