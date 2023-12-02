@@ -253,9 +253,11 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             pArgs->getShiz = 1;
         } else if (strcmp(arg, "--get-video") == 0) {
             val = argv[++n];
-            if (strcmp(val, "720") == 0) {
+            if ((strcmp(val, "720") == 0) ||
+                (strcmp(val, "720p") == 0)) {
                 pArgs->getVideo = res720p;
-            } else if (strcmp(val, "1080") == 0) {
+            } else if ((strcmp(val, "1080") == 0) ||
+                       (strcmp(val, "1080p") == 0)) {
                 pArgs->getVideo = res1080p;
             } else if ((strcmp(val, "4k") == 0) ||
                        (strcmp(val, "4K") == 0)) {
@@ -818,6 +820,10 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
         // If requested, download the MP4 video files
         if (pArgs->getVideo) {
             getVideoFiles(&routeDb, pArgs);
+        }
+
+        if (pArgs->dryRun) {
+            printf("Total download size: %.3lf GB\n", (totalContentLength / 1073741824.0));
         }
 	}
 

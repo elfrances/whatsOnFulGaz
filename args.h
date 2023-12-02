@@ -1,5 +1,7 @@
 #pragma once
 
+#include <inttypes.h>
+
 typedef enum OutFmt {
     undef = 0,
     csv = 1,

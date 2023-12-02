@@ -8,6 +8,25 @@
 
 #include "args.h"
 
+uint64_t totalContentLength;
+
+static const double oneGB = (1024*1024*1024);
+static const double oneMB = (1024*1024);
+
+static char *fmtContentLength(off_t contentLength)
+{
+    double len = contentLength;
+    static char fmtBuf[16];
+
+    if (len > oneGB) {
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf GB", (len / oneGB));
+    } else {
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf MB", (len / oneMB));
+    }
+
+    return fmtBuf;
+}
+
 static size_t writeOutputFileData(void *ptr, size_t size, size_t nmemb, void *stream)
 {
     size_t written = fwrite(ptr, size, nmemb, (FILE *) stream);
@@ -89,7 +108,9 @@ static off_t urlGetContentLength(const char *url, const char *dlFolder)
 int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
 {
     char filePath[512];
+    int fileExists = 0;
     struct stat statBuf;
+    off_t contentLength = 0;
 
     // If no outfile has been specified, use the URL's
     // basename as the output file name.
@@ -105,10 +126,20 @@ int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
     // Figure out the path to the output file
     snprintf(filePath, sizeof (filePath), "%s/%s", pArgs->dlFolder, outFile);
 
-    // See if the file already exists in the
-    // download folder...
+    // Does the file already exist in the download folder?
     if ((stat(filePath, &statBuf) == 0) && (statBuf.st_mode & S_IFREG)) {
-        off_t contentLength = urlGetContentLength(url, pArgs->dlFolder);
+        fileExists = 1;
+    }
+
+    // If the file already exists, or if the user requested a
+    // dry-run, fetch the length of the file from the server...
+    if (fileExists || pArgs->dryRun) {
+        contentLength = urlGetContentLength(url, pArgs->dlFolder);
+    }
+
+    // If the file already exists, check its size against the
+    // actual size...
+    if (fileExists) {
         if (contentLength == statBuf.st_size) {
             printf("INFO: Skipping file %s because it already exists in the specified download folder.\n", outFile);
             return 0;
@@ -163,7 +194,8 @@ int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
         // Close the output file
         fclose(fp);
     } else {
-        printf("Would download: %s ...\n", url);
+        printf("Would download: %s [%s] ...\n", url, fmtContentLength(contentLength));
+        totalContentLength += contentLength;
     }
 
     return 0;

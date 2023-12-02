@@ -2,4 +2,6 @@
 
 #include "args.h"
 
-int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs);
+extern uint64_t totalContentLength;
+
+extern int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs);
