@@ -148,11 +148,12 @@ static char *fmtCategories(const char *categories)
 static char *fmtDistance(const char *distance, Units units)
 {
     static char fmtBuf[32];
+    float val = atof(distance);
 
     if (units == metric) {
-        snprintf(fmtBuf, sizeof (fmtBuf), "%s", distance);
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3f", val);
     } else {
-        snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf", (atof(distance) / 1.60934));
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3f", (val / 1.60934));
     }
 
     return fmtBuf;
@@ -162,11 +163,12 @@ static char *fmtDistance(const char *distance, Units units)
 static char *fmtElevGain(const char *elevGain, Units units)
 {
     static char fmtBuf[32];
+    float val = atof(elevGain);
 
     if (units == metric) {
-        snprintf(fmtBuf, sizeof (fmtBuf), "%s", elevGain);
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3f", val);
     } else {
-        snprintf(fmtBuf, sizeof (fmtBuf), "%.3lf", (atof(elevGain) * 3.28083));
+        snprintf(fmtBuf, sizeof (fmtBuf), "%.3f", (val * 3.28083));
     }
 
     return fmtBuf;
