@@ -138,6 +138,9 @@ int jsonGetArrayValue(const JsonObject *pObj, const char *tag, char **pVal)
 //
 int jsonFindObject(const char *data, size_t dataLen, JsonObject *pObj)
 {
+    pObj->start = NULL;
+    pObj->end = NULL;
+
     // Locate the left curly brace
     if ((pObj->start = strchr(data, '{')) != NULL) {
         int level = 0;
@@ -149,11 +152,10 @@ int jsonFindObject(const char *data, size_t dataLen, JsonObject *pObj)
             if (*p == '{') {
                 level++;
             } else if (*p == '}') {
-                level--;
-            }
-            if (level == 0) {
-                pObj->end = p;
-                return 0;
+                if (--level == 0) {
+                    pObj->end = p;
+                    return 0;
+                }
             }
         }
     }
@@ -197,13 +199,12 @@ int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArra
                 if (*p == '[') {
                     level++;
                 } else if (*p == ']') {
-                    level--;
-                }
-                if (level == 0) {
-                    char *rightBracket = p;
-                    pArray->start = leftBracket;
-                    pArray->end = rightBracket;
-                    return 0;
+                    if (--level == 0) {
+                        char *rightBracket = p;
+                        pArray->start = leftBracket;
+                        pArray->end = rightBracket;
+                        return 0;
+                    }
                 }
             }
         }
@@ -215,19 +216,19 @@ int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArra
 // Process each element object in the specified array
 int jsonArrayForEach(const JsonArray *pArray, JsonCbHdlr handler, void *arg)
 {
-    const char *pData = pArray->start + 1;
-    size_t dataLen = pArray->end - pData;
-    JsonObject eleObj;
+    const char *data = pArray->start + 1;   // skip the '[' character
+    size_t dataLen = pArray->end - data;
+    JsonObject trkptObj;
 
-    while (dataLen > 0) {
-        if (jsonFindObject(pData, dataLen, &eleObj) == 0) {
+    while (data < pArray->end) {
+        if (jsonFindObject(data, dataLen, &trkptObj) == 0) {
             // Call the handler
-            if (handler(&eleObj, arg) != 0) {
+            if (handler(&trkptObj, arg) != 0) {
                 // Oops!
                 return -1;
             }
-            pData = eleObj.end + 1;
-            dataLen -= (eleObj.end - eleObj.start + 1);
+            data = trkptObj.end + 1;
+            dataLen -= (trkptObj.end - trkptObj.start + 1);
         } else {
             break;
         }

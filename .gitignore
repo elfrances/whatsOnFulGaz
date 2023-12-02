@@ -1,6 +1,7 @@
 .cproject
 .project
 .settings/*
+allrides_v4.json
 whatsOnFulGaz*
 *.d
 *.o

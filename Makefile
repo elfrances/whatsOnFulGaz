@@ -18,25 +18,6 @@ BIN_DIR = .
 DEP_DIR = .
 OBJ_DIR = .
 
-OS := $(shell uname -o)
-
-OS_TYPE_VAL = 0
-
-# macOS?
-ifeq ($(OS),Darwin)
-	OS_TYPE = 1
-endif
-
-# Windows?
-ifeq ($(OS),Cygwin)
-	OS_TYPE_VAL = 2
-endif
-
-# Linux?
-ifeq ($(OS),GNU/Linux)
-	OS_TYPE_VAL = 3
-endif
-
 CFLAGS = -m64 -D_GNU_SOURCE -DOS_TYPE=$(OS_TYPE_VAL) -I. -ggdb -Wall -Werror -O0
 LDFLAGS = -ggdb 
 
