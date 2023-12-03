@@ -335,7 +335,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
     }
 
     // Sanity check the min/max values
-    if ((pArgs->maxDistance != INT_MIN) && (pArgs->minDistance > pArgs->maxDistance)) {
+    if ((pArgs->maxDistance != INT_MIN) && (pArgs->minDistance != INT_MAX) && (pArgs->minDistance > pArgs->maxDistance)) {
         fprintf(stderr, "The minimum distance can't be greater than the maximum distance\n");
         return -1;
     }
@@ -343,7 +343,7 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
         fprintf(stderr, "The minimum duration can't be greater than the maximum duration\n");
         return -1;
     }
-    if ((pArgs->maxElevGain != INT_MIN) && (pArgs->minElevGain > pArgs->maxElevGain)) {
+    if ((pArgs->maxElevGain != INT_MIN) && (pArgs->minElevGain != INT_MAX) && (pArgs->minElevGain > pArgs->maxElevGain)) {
         fprintf(stderr, "The minimum elevation gain can't be greater than the maximum elevation gain\n");
         return -1;
     }
