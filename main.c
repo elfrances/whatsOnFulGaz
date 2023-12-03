@@ -129,7 +129,7 @@ static const char *help =
         "        Show what is going to be downloaded, without actually downloading\n"
         "        anything.\n"
         "    --export-gpx\n"
-        "        Export the ride as a GPX file.\n"
+        "        Export the ride as a GPX route file.\n"
         "    --get-shiz\n"
         "        Download the SHIZ control file of the ride.\n"
         "    --get-video {720|1080|4k}\n"
