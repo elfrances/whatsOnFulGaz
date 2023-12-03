@@ -13,6 +13,8 @@ The tool has the following features:
 
 4. It can automatically download the MP4 video file or the SHIZ control file of all the matching rides, into a selected download folder.
 
+5. It can generate a GPX route file of all the matching routes. The GPX file can then be uploaded to a web-based cycling app such as RideWithGps, to get a more detailed info about the geographic location and elevation profile of the ride. 
+
 See the examples section below for a few common use cases.
 
 # Building the tool
@@ -100,6 +102,8 @@ OPTIONS:
     --dry-run
         Show what is going to be downloaded, without actually downloading
         anything.
+    --export-gpx
+        Export the ride as a GPX route file.
     --get-shiz
         Download the SHIZ control file of the ride.
     --get-video {720|1080|4k}
@@ -362,6 +366,16 @@ Would download: https://fulgaz.cachefly.net/file/fulgaz-videos/4K/IRONMAN-Athlet
 Would download: https://fulgaz.cachefly.net/file/fulgaz-videos/4K/IRONMAN-Kaiser-Permanente-California-Virtual-World-Segment.mp4 [7.635 GB] ...
 TOTAL DOWNLOAD SIZE: 794.936 GB
 ```
+
+# Example 10
+
+If you want a more detailed description of the geographic location and elevation profile of the ride, you can use the ``--export-gpx`` option, and upload the generated GPX file to a web-based cycling app, such as https://www.ridewithgps.com. Here we exported the El Dique San Roque from Las Flores ride, and then uploaded the GPX file to [RideWithGps](assets/RideWithGps.png) :
+
+```
+$ whatsOnFulGaz --title dique --download-folder /cygdrive/d/FulGaz --export-gpx
+```
+
+
 
 
 
