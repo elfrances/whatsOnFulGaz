@@ -3,7 +3,10 @@
 .settings/*
 allrides_v4.json
 whatsOnFulGaz*
+*.csv
 *.d
+*.html
 *.o
+*.txt
 .~lock.*
 

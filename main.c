@@ -868,12 +868,14 @@ int main(int argc, char *argv[])
 
         inFile.filePath = allRides.filePath;
 
+#if 0
         {
             struct tm brkDwnTime = {0};
             char dateAndTimeBuf[128];
             strftime(dateAndTimeBuf, sizeof (dateAndTimeBuf), "%Y-%m-%dT%H:%M:%S", gmtime_r(&allRides.fileDate, &brkDwnTime));
             printf("Found rides directory file at: \"%s\" and dated: %s ...\n", inFile.filePath, dateAndTimeBuf);
         }
+#endif
     }
 
     //printf("Found rides file: %s\n", filePath);

@@ -227,6 +227,12 @@ void printCsvOutput(const RouteDB *pDb, const CmdArgs *pArgs)
     RouteInfo *pRoute;
 
     for (CellName n = name; n <= shiz ; n++) {
+        // The description text can be quite long and
+        // include commas, which is no-bueno in a CVS
+        // file, so we skip it...
+        if (n == description)
+            continue;
+
         if (n == distance) {
             printf("%s [%s],", cellName[n], (pArgs->units == metric) ? "km" : "mi");
         } else if (n == elevationGain) {
@@ -243,7 +249,6 @@ void printCsvOutput(const RouteDB *pDb, const CmdArgs *pArgs)
         printf("%s,", fmtProvince(pRoute->location));
         printf("%s,", pRoute->contributor);
         printf("%s,", fmtCategories(pRoute->categories));
-        printf("%s,", pRoute->description);
         printf("%s,", fmtDistance(pRoute->distance, pArgs->units));
         printf("%s,", fmtElevGain(pRoute->elevation, pArgs->units));
         printf("%s,", fmtTime(pRoute->time));
