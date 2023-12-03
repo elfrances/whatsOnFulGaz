@@ -1,5 +1,5 @@
 # whatsOnFulGaz
-**FulGaz** is a popular multi-platform virtual cycling app developed by Bizar Mobile. At the time of this writing, its library includes more than 2,000 routes in 56 different countries. A companion web applet https://whatsonfulgaz.com is used to interactively search the route library using a web browser.  
+**FulGaz** is a popular multi-platform virtual cycling app developed by Bizar Mobile. At the time of this writing, its library includes more than 2,000 routes in 56 different countries. A companion web applet https://whatsonfulgaz.com developed by Gavin Williams can be used to interactively search the route library using a web browser.  
 
 **whatsOnFulGaz** is a simple command-line tool similar in functionality to the homonymous web applet, but intended to be used mostly in unattended batch mode. 
 
@@ -13,20 +13,22 @@ The tool has the following features:
 
 4. It can automatically download the MP4 video file or the SHIZ control file of all the matching rides, into a selected download folder.
 
+See the examples section below for a few common use cases.
+
 # Building the tool
 
-**whatsOnFulGaz** is written entirely in C and only uses the well-known CURL library. The tool is known to build under Windows (Cygwin), macOS Ventura, Ubuntu 22.04, and Rocky Linux 9.
+**whatsOnFulGaz** is written entirely in C and only uses the well-known CURL library. The tool is known to build under Windows (Cygwin), macOS Ventura/Sonoma, Ubuntu 22.04, and Rocky Linux 9.
  
-To build the **whatsOnFulGaz** tool all you need to do is clone the repo from GitHub and run 'make' at the top-level directory:
+To build the **whatsOnFulGaz** tool all you need to do is clone the repo from GitHub and run 'bash build.sh' at the top-level directory:
 
 ```
 $ git clone https://github.com/elfrances/whatsOnFulGaz.git
 $ cd whatsOnFulGaz
-$ make
-cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o download.o -c download.c
-cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o json.o -c json.c
-cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o main.o -c main.c
-cc -m64 -D_GNU_SOURCE -I. -ggdb -Wall -Werror -O0 -D__CYGWIN__ -o output.o -c output.c
+$ bash build.sh
+cc -m64 -D_GNU_SOURCE -DOS_TYPE=2 -I. -ggdb -Wall -Werror -O0 -o download.o -c download.c
+cc -m64 -D_GNU_SOURCE -DOS_TYPE=2 -I. -ggdb -Wall -Werror -O0 -o json.o -c json.c
+cc -m64 -D_GNU_SOURCE -DOS_TYPE=2 -I. -ggdb -Wall -Werror -O0 -o main.o -c main.c
+cc -m64 -D_GNU_SOURCE -DOS_TYPE=2 -I. -ggdb -Wall -Werror -O0 -o output.o -c output.c
 cc -ggdb  -o ./whatsOnFulGaz ./download.o ./json.o ./main.o ./output.o -lcurl
 ```
 
