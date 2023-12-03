@@ -123,7 +123,7 @@ int urlDownload(const char *url, const char *outFile, const CmdArgs *pArgs)
             fprintf(stderr, "ERROR: can't figure out output file name\n");
             return -1;
         }
-        outFile++;  // skip the final '/'
+        outFile++;  // skip the final '/' character
     }
 
     // Figure out the path to the output file

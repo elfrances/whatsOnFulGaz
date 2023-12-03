@@ -17,6 +17,7 @@
 #include "json.h"
 #include "output.h"
 #include "routedb.h"
+#include "shiz.h"
 
 #if (OS_TYPE == OS_TYPE_MACOS)
 #undef st_atim
@@ -27,8 +28,6 @@ typedef struct AllRidesFile {
     char filePath[1024];
     time_t fileDate;
 } AllRidesFile;
-
-#define PROGRAM_VERSION "1.7"
 
 /*
  * In FulGaz a route record is a JSON object with the
@@ -129,6 +128,8 @@ static const char *help =
         "    --dry-run\n"
         "        Show what is going to be downloaded, without actually downloading\n"
         "        anything.\n"
+        "    --export-gpx\n"
+        "        Export the ride as a GPX file.\n"
         "    --get-shiz\n"
         "        Download the SHIZ control file of the ride.\n"
         "    --get-video {720|1080|4k}\n"
@@ -249,6 +250,8 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             pArgs->dlProg = 1;
         } else if (strcmp(arg, "--dry-run") == 0) {
             pArgs->dryRun = 1;
+        } else if (strcmp(arg, "--export-gpx") == 0) {
+            pArgs->expGpx = 1;
         } else if (strcmp(arg, "--get-shiz") == 0) {
             pArgs->getShiz = 1;
         } else if (strcmp(arg, "--get-video") == 0) {
@@ -772,6 +775,17 @@ static void getVideoFiles(const RouteDB *pDb, const CmdArgs *pArgs)
     }
 }
 
+static void expGpxFiles(const RouteDB *pDb, const CmdArgs *pArgs)
+{
+    RouteInfo *pRoute;
+
+    TAILQ_FOREACH(pRoute, &pDb->routeList, tqEntry) {
+        char filePath[256];
+        snprintf(filePath, sizeof (filePath), "%s/%s", pArgs->dlFolder, pRoute->shiz);
+        shizToGpx(pRoute->title, filePath);
+    }
+}
+
 static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 {
 	RouteDB routeDb = {0};
@@ -813,13 +827,18 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
         }
 
         // If requested, download the SHIZ control files
-        if (pArgs->getShiz) {
+        if (pArgs->getShiz || pArgs->expGpx) {
             getShizFiles(&routeDb, pArgs);
         }
 
         // If requested, download the MP4 video files
         if (pArgs->getVideo) {
             getVideoFiles(&routeDb, pArgs);
+        }
+
+        // If requested, export the GPX files
+        if (pArgs->expGpx) {
+            expGpxFiles(&routeDb, pArgs);
         }
 
         if (pArgs->dryRun) {

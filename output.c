@@ -363,3 +363,85 @@ void printTextOutput(const RouteDB *pDb, const CmdArgs *pArgs)
     }
 }
 
+#if 0
+static void printGpxFmt(GpsTrk *pTrk, CmdArgs *pArgs)
+{
+    time_t now;
+    struct tm brkDwnTime = {0};
+    char timeBuf[128];
+    TrkPt *p;
+
+    // Print headers
+    fprintf(pArgs->outFile, "%s", xmlHeader);
+    fprintf(pArgs->outFile, gpxHeader, PROG_VER_MAJOR, PROG_VER_MINOR);
+
+    // Print metadata
+    now = time(NULL);
+    strftime(timeBuf, sizeof (timeBuf), "%Y-%m-%dT%H:%M:%S", gmtime_r(&now, &brkDwnTime));
+    fprintf(pArgs->outFile, "  <metadata>\n");
+    fprintf(pArgs->outFile, "    <name> %s </name>\n", pArgs->name);
+    fprintf(pArgs->outFile, "    <author>actFileTool version %d.%d [https://github.com/elfrances/actFileTool.git]</author>\n", PROG_VER_MAJOR, PROG_VER_MINOR);
+    fprintf(pArgs->outFile, "    <desc> ");
+    for (int n = 1; n < pArgs->argc; n++) {
+        fprintf(pArgs->outFile, "%s ", pArgs->argv[n]);
+    }
+    fprintf(pArgs->outFile, "    </desc>\n");
+    fprintf(pArgs->outFile, "    <time>%s</time>\n", timeBuf);
+    fprintf(pArgs->outFile, "  </metadata>\n");
+
+    // Print track
+    fprintf(pArgs->outFile, "  <trk>\n");
+    if (pArgs->name != NULL) {
+        fprintf(pArgs->outFile, "    <name>%s</name>\n", pArgs->name);
+    }
+    fprintf(pArgs->outFile, "    <type>%d</type>\n", gpxActType(pTrk, pArgs));
+
+    // Print track segment
+    fprintf(pArgs->outFile, "    <trkseg>\n");
+
+    // Print all the track points
+    TAILQ_FOREACH(p, &pTrk->trkPtList, tqEntry) {
+        double timeStamp = (p->adjTime != 0.0) ? p->adjTime : p->timestamp;    // use the adjusted timestamp if there is one
+        time_t time;
+        int ms = 0;
+
+        timeStamp += pTrk->timeOffset;
+        time = (time_t) timeStamp;  // sec only
+        ms = (timeStamp - (double) time) * 1000.0;  // milliseconds
+        strftime(timeBuf, sizeof (timeBuf), "%Y-%m-%dT%H:%M:%S", gmtime_r(&time, &brkDwnTime));
+        fprintf(pArgs->outFile, "      <trkpt lat=\"%.10lf\" lon=\"%.10lf\">\n", p->latitude, p->longitude);
+        fprintf(pArgs->outFile, "        <ele>%.10lf</ele>\n", p->elevation);
+        fprintf(pArgs->outFile, "        <time>%s.%03dZ</time>\n", timeBuf, ms);
+        if (pArgs->outMask != SD_NONE) {
+            fprintf(pArgs->outFile, "        <extensions>\n");
+            if ((pTrk->inMask & SD_POWER) && (pArgs->outMask & SD_POWER)) {
+                fprintf(pArgs->outFile, "          <power>%d</power>\n", p->power);
+            }
+            if ((pTrk->inMask & (SD_ATEMP | SD_CADENCE | SD_HR)) && (pArgs->outMask & (SD_ATEMP | SD_CADENCE | SD_HR))) {
+                fprintf(pArgs->outFile, "          <gpxtpx:TrackPointExtension>\n");
+                if ((pTrk->inMask & SD_ATEMP) && (pArgs->outMask & SD_ATEMP)) {
+                    fprintf(pArgs->outFile, "            <gpxtpx:atemp>%d</gpxtpx:atemp>\n", p->ambTemp);
+                }
+                if ((pTrk->inMask & SD_HR) && (pArgs->outMask & SD_HR)) {
+                    fprintf(pArgs->outFile, "            <gpxtpx:hr>%d</gpxtpx:hr>\n", p->heartRate);
+                }
+                if ((pTrk->inMask & SD_CADENCE) && (pArgs->outMask & SD_CADENCE)) {
+                    fprintf(pArgs->outFile, "            <gpxtpx:cad>%d</gpxtpx:cad>\n", p->cadence);
+                }
+                fprintf(pArgs->outFile, "          </gpxtpx:TrackPointExtension>\n");
+            }
+            fprintf(pArgs->outFile, "        </extensions>\n");
+        }
+
+        fprintf(pArgs->outFile, "      </trkpt>\n");
+    }
+
+    fprintf(pArgs->outFile, "    </trkseg>\n");
+
+    fprintf(pArgs->outFile, "  </trk>\n");
+
+    fprintf(pArgs->outFile, "</gpx>\n");
+}
+#endif
+
+

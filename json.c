@@ -69,36 +69,6 @@ const char *jsonFindTag(const JsonObject *pObj, const char *tag)
     return NULL;
 }
 
-// Format is: "<tag>":"<val>" where the value is a string
-int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal)
-{
-    const char *val;
-
-    if ((val = jsonFindTag(pObj, tag)) != NULL) {
-        const char *openQuotes = strchr(val, '"');
-        if (openQuotes != NULL) {
-            for (const char *p = (openQuotes+1); p != pObj->end; p++) {
-                if (*p == '"') {
-                    if (*(p - 1) == '\\') {
-                        // This is an escaped double quote that
-                        // is part of the string value...
-                        continue;
-                    } else {
-                        const char *endQuotes = p;
-                        char *str = stringify((openQuotes+1), (endQuotes - 1));
-                        if (str != NULL) {
-                            *pVal = str;
-                            return 0;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return -1;
-}
-
 // Format is: "<tag>":[<ent0>,<ent1>,...,<entN>]
 int jsonGetArrayValue(const JsonObject *pObj, const char *tag, char **pVal)
 {
@@ -235,4 +205,75 @@ int jsonArrayForEach(const JsonArray *pArray, JsonCbHdlr handler, void *arg)
     }
 
     return 0;
+}
+
+// Format is: "<tag>":"<val>" where the value is a string
+int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal)
+{
+    const char *val;
+
+    if ((val = jsonFindTag(pObj, tag)) != NULL) {
+        const char *openQuotes = strchr(val, '"');
+        if (openQuotes != NULL) {
+            for (const char *p = (openQuotes+1); p != pObj->end; p++) {
+                if (*p == '"') {
+                    if (*(p - 1) == '\\') {
+                        // This is an escaped double quote that
+                        // is part of the string value...
+                        continue;
+                    } else {
+                        const char *endQuotes = p;
+                        char *str = stringify((openQuotes+1), (endQuotes - 1));
+                        if (str != NULL) {
+                            *pVal = str;
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return -1;
+}
+
+// Format is: "<tag>":"<val>" where the value is a string representing
+// the time in hh:mm:ss.
+int jsonGetStrTimeValue(const JsonObject *pObj, const char *tag, time_t *pVal)
+{
+    char *value = NULL;
+    unsigned int hr, min, sec;
+    int s = 0;
+
+    if (jsonGetStringValue(pObj, tag, &value) != 0)
+        return -1;
+
+    if (sscanf(value, "%u:%u:%u", &hr, &min, &sec) == 3) {
+        *pVal = (hr * 3600) + (min * 60) + sec;
+    } else {
+        s = -1;
+    }
+
+    free(value);
+
+    return s;
+}
+
+// Format is: "<tag>":"<val>" where the value is a string representing
+// a double floating point number.
+int jsonGetStrDoubleValue(const JsonObject *pObj, const char *tag, double *pVal)
+{
+    char *value = NULL;
+    int s = 0;
+
+    if (jsonGetStringValue(pObj, tag, &value) != 0)
+        return -1;
+
+    if (sscanf(value, "%le", pVal) != 1) {
+        s = -1;
+    }
+
+    free(value);
+
+    return s;
 }

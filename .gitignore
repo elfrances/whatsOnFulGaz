@@ -5,8 +5,11 @@ allrides_v4.json
 whatsOnFulGaz*
 *.csv
 *.d
+*.gpx
 *.html
+*.mp4
 *.o
+*.shiz
 *.txt
 .~lock.*
 

@@ -24,9 +24,6 @@ typedef int (*JsonCbHdlr)(const JsonObject *, void *);
 //
 const char *jsonFindTag(const JsonObject *pObj, const char *tag);
 
-// Format is: "<tag>":"<val>" where the value is a string
-int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal);
-
 // Format is: "<tag>":[<ent0>,<ent1>,...,<entN>]
 int jsonGetArrayValue(const JsonObject *pObj, const char *tag, char **pVal);
 
@@ -53,4 +50,16 @@ int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArra
 
 // Process each element in the specified array
 int jsonArrayForEach(const JsonArray *pArray, JsonCbHdlr handler, void *arg);
+
+// Format is: "<tag>":"<val>" where the value is a string
+int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal);
+
+// Format is: "<tag>":"<val>" where the value is a string representing
+// the time in hh:mm:ss.
+int jsonGetStrTimeValue(const JsonObject *pObj, const char *tag, time_t *pVal);
+
+// Format is: "<tag>":"<val>" where the value is a string representing
+// a double floating point number.
+int jsonGetStrDoubleValue(const JsonObject *pObj, const char *tag, double *pVal);
+
 

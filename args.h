@@ -2,6 +2,8 @@
 
 #include <inttypes.h>
 
+#define PROGRAM_VERSION "1.7"
+
 typedef enum OutFmt {
     undef = 0,
     csv = 1,
@@ -47,6 +49,7 @@ typedef struct CmdArgs {
     int getShiz;
     int dlProg;
     int dryRun;
+    int expGpx;
     int maxDistance;
     int maxDuration;
     int maxElevGain;
