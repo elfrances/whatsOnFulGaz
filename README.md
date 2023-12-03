@@ -369,7 +369,7 @@ TOTAL DOWNLOAD SIZE: 794.936 GB
 
 # Example 10
 
-If you want a more detailed description of the geographic location and elevation profile of the ride, you can use the ``--export-gpx`` option, and upload the generated GPX file to a web-based cycling app, such as https://www.ridewithgps.com. Here we exported the El Dique San Roque from Las Flores ride, and then uploaded the GPX file to [RideWithGps](assets/RideWithGps.png) :
+If you want a more detailed description of the geographic location and elevation profile of the ride, you can use the ``--export-gpx`` option, and upload the generated GPX file to a web-based cycling app, such as https://www.ridewithgps.com. Here we exported the El Dique San Roque from Las Flores ride, and then uploaded the GPX file to [RideWithGps](assets/RideWithGps.png) and to [Vue GPS Smoother](assets/VueGpxSmoother.png) :
 
 ```
 $ whatsOnFulGaz --title dique --download-folder /cygdrive/d/FulGaz --export-gpx
