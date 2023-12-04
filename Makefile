@@ -18,7 +18,7 @@ BIN_DIR = .
 DEP_DIR = .
 OBJ_DIR = .
 
-CFLAGS = -m64 -D_GNU_SOURCE -DOS_TYPE=$(OS_TYPE_VAL) -I. -ggdb -Wall -Werror -O0
+CFLAGS = -D_GNU_SOURCE -DOS_TYPE=$(OS_TYPE_VAL) -I. -ggdb -Wall -Werror -O0
 LDFLAGS = -ggdb 
 
 SOURCES = $(wildcard *.c)
