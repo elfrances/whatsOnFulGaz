@@ -7,13 +7,6 @@ typedef struct JsonObject {
     char *end;      // points to the right curly brace where the object ends
 } JsonObject;
 
-// A JSON array consists of text enclosed within matching
-// square brackets.
-typedef struct JsonArray {
-    char *start;    // points to the left square bracket where the array starts
-    char *end;      // points to the right square bracket where the array ends
-} JsonArray;
-
 // Callback handler for the for-each iterator
 typedef int (*JsonCbHdlr)(const JsonObject *, void *);
 
@@ -22,44 +15,48 @@ typedef int (*JsonCbHdlr)(const JsonObject *, void *);
 //
 //   { ..., <tag> : <value>, ... }
 //
-const char *jsonFindTag(const JsonObject *pObj, const char *tag);
+extern const char *jsonFindTag(const JsonObject *pObj, const char *tag);
 
 // Format is: "<tag>":[<ent0>,<ent1>,...,<entN>]
-int jsonGetArrayValue(const JsonObject *pObj, const char *tag, char **pVal);
+extern int jsonGetArrayValue(const JsonObject *pObj, const char *tag, char **pVal);
 
 // A JSON object consists of text enclosed within matching
 // curly braces: e.g.
 //
 //    {"user':"John Doe","age":"35","gender":"male"}
 //
-int jsonFindObject(const char *data, size_t dataLen, JsonObject *pObj);
+extern int jsonFindObject(const char *data, size_t dataLen, JsonObject *pObj);
 
 // Search the specified object for an embedded object with
 // the given tag: e.g.
 //
 //   { ..., "info":{"make":"Honda","model":"Pilot","trim":"EX-L"}, ... }
 //
-int jsonFindObjByTag(const JsonObject *pObj, const char *tag, JsonObject *pEmbObj);
+extern int jsonFindObjByTag(const JsonObject *pObj, const char *tag, JsonObject *pEmbObj);
 
 // Search the specified object for an array with the
 // given tag: e.g.
 //
 //   { ..., "<tag>":[<ent0>,<ent1>,...,<entN>], ... }
 //
-int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArray);
+extern int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonObject *pArray);
 
 // Process each element in the specified array
-int jsonArrayForEach(const JsonArray *pArray, JsonCbHdlr handler, void *arg);
+extern int jsonArrayForEach(const JsonObject *pArray, JsonCbHdlr handler, void *arg);
 
 // Format is: "<tag>":"<val>" where the value is a string
-int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal);
+extern int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal);
 
 // Format is: "<tag>":"<val>" where the value is a string representing
 // the time in hh:mm:ss.
-int jsonGetStrTimeValue(const JsonObject *pObj, const char *tag, time_t *pVal);
+extern int jsonGetStrTimeValue(const JsonObject *pObj, const char *tag, time_t *pVal);
 
 // Format is: "<tag>":"<val>" where the value is a string representing
 // a double floating point number.
-int jsonGetStrDoubleValue(const JsonObject *pObj, const char *tag, double *pVal);
+extern int jsonGetStrDoubleValue(const JsonObject *pObj, const char *tag, double *pVal);
 
+// Format is: "<tag>":<double> where the value is a double float number.
+extern int jsonGetDoubleValue(const JsonObject *pObj, const char *tag, double *pVal);
+
+extern void jsonDumpObject(const JsonObject *pObj);
 

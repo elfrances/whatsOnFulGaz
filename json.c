@@ -37,11 +37,20 @@ static void dumpText(const char *data, size_t dataLen)
     fflush(stdout);
 }
 
-static void jsonDumpObject(const JsonObject *pObj)
+static size_t jsonGetObjDataLen(const JsonObject *pObj)
 {
-    dumpText(pObj->start, (pObj->end - pObj->start));
+    return (pObj->end - pObj->start + 1);
 }
 #endif
+
+void jsonDumpObject(const JsonObject *pObj)
+{
+    for (const char *p = pObj->start; p <= pObj->end; p++) {
+        fputc(*p, stdout);
+    }
+    fputc('\n', stdout);
+    fflush(stdout);
+}
 
 // Locate the specified tag within the given JSON object and
 // return a pointer to its value: e.g.
@@ -80,7 +89,7 @@ int jsonGetArrayValue(const JsonObject *pObj, const char *tag, char **pVal)
         if (leftBracket != NULL) {
             // Locate the matching right square bracket
             int level = 0;
-            for (const char *p = leftBracket; p != pObj->end; p++) {
+            for (const char *p = leftBracket; p <= pObj->end; p++) {
                 if (*p == '[') {
                     level++;
                 } else if (*p == ']') {
@@ -108,27 +117,47 @@ int jsonGetArrayValue(const JsonObject *pObj, const char *tag, char **pVal)
 //
 int jsonFindObject(const char *data, size_t dataLen, JsonObject *pObj)
 {
-    pObj->start = NULL;
-    pObj->end = NULL;
+    const char *start = data;
+    const char *end = data + dataLen - 1;
 
-    // Locate the left curly brace
-    if ((pObj->start = strchr(data, '{')) != NULL) {
+    // Locate the left curly brace, within the
+    // available data block...
+    while (start < end) {
+        if (*start == '{') {
+            pObj->start = (char *) start;
+            break;
+        } else {
+            start++;
+        }
+    }
+
+    if (start != end) {
         int level = 0;
-        const char *pEnd = data + dataLen;
 
         // Locate the matching right curly brace which
         // terminates the JSON object.
-        for (char *p = pObj->start; p != pEnd; p++) {
+        for (char *p = pObj->start; p <= end; p++) {
             if (*p == '{') {
                 level++;
+                //printf("%s: p=%p level=%u\n", __func__, p, level);
             } else if (*p == '}') {
-                if (--level == 0) {
+                if (level > 0) {
+                    level--;
+                    //printf("%s: p=%p level=%u\n", __func__, p, level);
+                } else {
+                    printf("%s: SPONG! Malformed JSON object!\n", __func__);
+                    break;
+                }
+                if (level == 0) {
                     pObj->end = p;
                     return 0;
                 }
             }
         }
     }
+
+    pObj->start = NULL;
+    pObj->end = NULL;
 
     return -1;
 }
@@ -155,7 +184,7 @@ int jsonFindObjByTag(const JsonObject *pObj, const char *tag, JsonObject *pEmbOb
 //
 //   { ..., "<tag>":[<ent0>,<ent1>,...,<entN>], ... }
 //
-int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArray)
+int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonObject *pArray)
 {
     const char *val;
 
@@ -165,7 +194,7 @@ int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArra
         if (leftBracket != NULL) {
             // Locate the matching right square bracket
             int level = 0;
-            for (char *p = leftBracket; p != pObj->end; p++) {
+            for (char *p = leftBracket; p <= pObj->end; p++) {
                 if (*p == '[') {
                     level++;
                 } else if (*p == ']') {
@@ -173,6 +202,7 @@ int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArra
                         char *rightBracket = p;
                         pArray->start = leftBracket;
                         pArray->end = rightBracket;
+                        //jsonDumpObject(pArray);
                         return 0;
                     }
                 }
@@ -184,22 +214,33 @@ int jsonFindArrayByTag(const JsonObject *pObj, const char *tag, JsonArray *pArra
 }
 
 // Process each element object in the specified array
-int jsonArrayForEach(const JsonArray *pArray, JsonCbHdlr handler, void *arg)
+int jsonArrayForEach(const JsonObject *pArray, JsonCbHdlr handler, void *arg)
 {
-    const char *data = pArray->start + 1;   // skip the '[' character
-    size_t dataLen = pArray->end - data;
+    const char *data = pArray->start;
+    size_t dataLen = pArray->end - data + 1;
     JsonObject trkptObj;
+
+    //printf("%s: start=%p end=%p dataLen=%zu\n", __func__, pArray->start, pArray->end, dataLen);
 
     while (data < pArray->end) {
         if (jsonFindObject(data, dataLen, &trkptObj) == 0) {
+            // Paranoia?
+            if ((trkptObj.start > pArray->end) || (trkptObj.end > pArray->end)) {
+                printf("%s: SPONG! Object is outside the data range: trkptStart=%p trkptEnd=%p dataLen=%zu\n", __func__, trkptObj.start, trkptObj.end, dataLen);
+                jsonDumpObject(&trkptObj);
+                break;
+            }
+
             // Call the handler
             if (handler(&trkptObj, arg) != 0) {
                 // Oops!
                 return -1;
             }
+
             data = trkptObj.end + 1;
-            dataLen -= (trkptObj.end - trkptObj.start + 1);
+            dataLen = pArray->end - data + 1;
         } else {
+            //printf("%s: No more objects in the array! data=%p dataLen=%zu\n", __func__, data, dataLen);
             break;
         }
     }
@@ -215,7 +256,7 @@ int jsonGetStringValue(const JsonObject *pObj, const char *tag, char **pVal)
     if ((val = jsonFindTag(pObj, tag)) != NULL) {
         const char *openQuotes = strchr(val, '"');
         if (openQuotes != NULL) {
-            for (const char *p = (openQuotes+1); p != pObj->end; p++) {
+            for (const char *p = (openQuotes+1); p <= pObj->end; p++) {
                 if (*p == '"') {
                     if (*(p - 1) == '\\') {
                         // This is an escaped double quote that
@@ -274,6 +315,22 @@ int jsonGetStrDoubleValue(const JsonObject *pObj, const char *tag, double *pVal)
     }
 
     free(value);
+
+    return s;
+}
+
+// Format is: "<tag>":<double> where the value is a double float number.
+int jsonGetDoubleValue(const JsonObject *pObj, const char *tag, double *pVal)
+{
+    const char *value = NULL;
+    int s = 0;
+
+    if ((value = jsonFindTag(pObj, tag)) == NULL)
+        return -1;
+
+    if (sscanf(value, "%le", pVal) != 1) {
+        s = -1;
+    }
 
     return s;
 }

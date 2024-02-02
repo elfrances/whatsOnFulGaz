@@ -155,6 +155,8 @@ static int createGpxFile(const char *title, const char *shizPath, const GpsTrk *
 
     fclose(fp);
 
+    printf("INFO: Created GPX file \"%s\"\n", gpxPath);
+
     return 0;
 }
 
@@ -178,38 +180,47 @@ static int procTrkPtObj(const JsonObject *pObj, void *arg)
     //
     // {"-lon":"5.280152","-lat":"44.174612","speed":"13.9","ele":"1876.6","distance":"20.719","bearing":"239.8","slope":"6.2","time":"02:03:59","index":7439}
     //
+    // In some shiz files the numeric values are not strings but actual
+    // integer/float numbers, so we allow for either format...
 
-    if (jsonGetStrDoubleValue(pObj, "-lon", &pTrkPt->longitude) != 0) {
+    if ((jsonGetStrDoubleValue(pObj, "-lon", &pTrkPt->longitude) != 0) &&
+        (jsonGetDoubleValue(pObj, "-lon", &pTrkPt->longitude) != 0)) {
         fprintf(stderr, "ERROR: Can't get longitude value: %s\n", fmtTrkPtObj(pObj));
         return -1;
     }
 
-    if (jsonGetStrDoubleValue(pObj, "-lat", &pTrkPt->latitude) != 0) {
+    if ((jsonGetStrDoubleValue(pObj, "-lat", &pTrkPt->latitude) != 0) &&
+        (jsonGetDoubleValue(pObj, "-lat", &pTrkPt->latitude) != 0)) {
         fprintf(stderr, "ERROR: Can't get latitude value: %s\n", fmtTrkPtObj(pObj));
         return -1;
     }
 
-    if (jsonGetStrDoubleValue(pObj, "speed", &pTrkPt->speed) != 0) {
+    if ((jsonGetStrDoubleValue(pObj, "speed", &pTrkPt->speed) != 0) &&
+        (jsonGetDoubleValue(pObj, "speed", &pTrkPt->speed) != 0)) {
         fprintf(stderr, "ERROR: Can't get speed value: %s\n", fmtTrkPtObj(pObj));
         return -1;
     }
 
-    if (jsonGetStrDoubleValue(pObj, "ele", &pTrkPt->elevation) != 0) {
+    if ((jsonGetStrDoubleValue(pObj, "ele", &pTrkPt->elevation) != 0) &&
+        (jsonGetDoubleValue(pObj, "ele", &pTrkPt->elevation) != 0)) {
         fprintf(stderr, "ERROR: Can't get elevation value: %s\n", fmtTrkPtObj(pObj));
         return -1;
     }
 
-    if (jsonGetStrDoubleValue(pObj, "distance", &pTrkPt->distance) != 0) {
+    if ((jsonGetStrDoubleValue(pObj, "distance", &pTrkPt->distance) != 0) &&
+        (jsonGetDoubleValue(pObj, "distance", &pTrkPt->distance) != 0)) {
         fprintf(stderr, "ERROR: Can't get distance value: %s\n", fmtTrkPtObj(pObj));
         return -1;
     }
 
-    if (jsonGetStrDoubleValue(pObj, "bearing", &pTrkPt->bearing) != 0) {
+    if ((jsonGetStrDoubleValue(pObj, "bearing", &pTrkPt->bearing) != 0) &&
+        (jsonGetDoubleValue(pObj, "bearing", &pTrkPt->bearing) != 0)) {
         fprintf(stderr, "ERROR: Can't get bearing value: %s\n", fmtTrkPtObj(pObj));
         return -1;
     }
 
-    if (jsonGetStrDoubleValue(pObj, "slope", &pTrkPt->grade) != 0) {
+    if ((jsonGetStrDoubleValue(pObj, "slope", &pTrkPt->grade) != 0) &&
+        (jsonGetDoubleValue(pObj, "slope", &pTrkPt->grade) != 0)) {
         fprintf(stderr, "ERROR: Can't get slope value: %s\n", fmtTrkPtObj(pObj));
         return -1;
     }
@@ -275,7 +286,7 @@ static GpsTrk *parseShizFile(const char *filePath)
     InFile inFile = { .filePath = filePath };
     GpsTrk *pTrk = NULL;
     JsonObject mainObj = {0};
-    JsonArray trkpt = {0};
+    JsonObject trkpt = {0};
 
     if (readInFile(&inFile) != 0) {
         // Error message already printed
@@ -283,11 +294,14 @@ static GpsTrk *parseShizFile(const char *filePath)
     }
 
     // Locate the main JSON object
-    if (jsonFindObject(inFile.data, inFile.dataLen, &mainObj) != 0) {
-        fprintf(stderr, "ERROR: can't find main JSON object!\n");
-        free(inFile.data);
-        return NULL;
-    }
+    //if (jsonFindObject(inFile.data, inFile.dataLen, &mainObj) != 0) {
+    //    fprintf(stderr, "ERROR: can't find main JSON object!\n");
+    //    free(inFile.data);
+    //    return NULL;
+    //}
+
+    mainObj.start = inFile.data;
+    mainObj.end = mainObj.start + inFile.dataLen - 1;
 
     // Get the "trkpt" array which contains all
     // the trackpoint objects.
@@ -302,6 +316,8 @@ static GpsTrk *parseShizFile(const char *filePath)
         free(inFile.data);
         return NULL;
     }
+
+    //jsonDumpObject(&trkpt);
 
     // Process each entry in the "trkpt" array ...
     jsonArrayForEach(&trkpt, procTrkPtObj, pTrk);

@@ -790,7 +790,7 @@ static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 {
 	RouteDB routeDb = {0};
 	char *result;
-	JsonArray data = {0};
+	JsonObject data = {0};
 
 	TAILQ_INIT(&routeDb.routeList);
 	routeDb.shizUrlPfx = "https://assets.fulgaz.com/";
