@@ -2,6 +2,8 @@
 
 #include <sys/queue.h>
 
+__BEGIN_DECLS
+
 typedef struct RouteInfo {
     TAILQ_ENTRY(RouteInfo) tqEntry;
 
@@ -36,3 +38,8 @@ typedef struct RouteDB {
     // Number of routes in the list
     int numRoutes;
 } RouteDB;
+
+extern int rtDbInit(RouteDB *rtDb);
+extern int rtDbAdd(RouteDB *rtDb, const RouteInfo *rtInfo);
+
+__END_DECLS

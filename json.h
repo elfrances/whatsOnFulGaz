@@ -1,5 +1,7 @@
 #pragma once
 
+__BEGIN_DECLS
+
 // A JSON object consists of text enclosed within matching
 // curly braces.
 typedef struct JsonObject {
@@ -59,4 +61,6 @@ extern int jsonGetStrDoubleValue(const JsonObject *pObj, const char *tag, double
 extern int jsonGetDoubleValue(const JsonObject *pObj, const char *tag, double *pVal);
 
 extern void jsonDumpObject(const JsonObject *pObj);
+
+__END_DECLS
 

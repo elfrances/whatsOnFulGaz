@@ -788,11 +788,11 @@ static void expGpxFiles(const RouteDB *pDb, const CmdArgs *pArgs)
 
 static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
 {
-	RouteDB routeDb = {0};
+	RouteDB routeDb;
 	char *result;
 	JsonObject data = {0};
 
-	TAILQ_INIT(&routeDb.routeList);
+	rtDbInit(&routeDb);
 	routeDb.shizUrlPfx = "https://assets.fulgaz.com/";
 
 	if (jsonGetStringValue(pObj, "result", &result) != 0) {
