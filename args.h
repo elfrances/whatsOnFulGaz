@@ -41,6 +41,8 @@ typedef struct CmdArgs {
     const char *contributor;
     const char *country;
     const char *province;
+    const char *mp4;
+    const char *shiz;
     const char *title;
     const char *dlFolder;
     OutFmt outFmt;

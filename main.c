@@ -150,6 +150,11 @@ static const char *help =
         "        value.\n"
         "    --min-elevation-gain <value>\n"
         "        Only include rides with an elevation gain above the specified value.\n"
+        "    --mp4 <name>\n"
+        "        Only include rides that have <name> in their MP4 file name. The name\n"
+        "        match is case-insensitive and liberal: e.g. specifying \"cuadrado\"\n"
+        "        will match the MP4 files: \"Camino-Del-Cuadrado.mp4\" and\n"
+        "        \"Camino-Del-Cuadrado-Downhill.mp4\".\n"
         "    --output-format {csv|html|text}\n"
         "        Specifies the format of the output file with the list of routes.\n"
         "        If omitted, the plain text format is used by default.\n"
@@ -157,6 +162,11 @@ static const char *help =
         "        Only include rides from the specified province or state in the\n"
         "        specified country. The name match is case-insensitive and liberal:\n"
         "        e.g. specifying \"cali\" will match all rides from California, USA.\n"
+        "    --shiz <name>\n"
+        "        Only include rides that have <name> in their shiz file name. The name\n"
+        "        match is case-insensitive and liberal: e.g. specifying \"cuadrado\"\n"
+        "        will match the shiz files: \"Camino-Del-Cuadrado-working-seg.shiz\"\n"
+        "        and \"Camino-Del-Cuadrado-Downhill-working-seg.2.shiz\".\n"
         "    --title <name>\n"
         "        Only include rides that have <name> in their title. The name\n"
         "        match is case-insensitive and liberal: e.g. specifying \"gavia\"\n"
@@ -305,6 +315,8 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
                 fprintf(stderr, "Invalid min elevation gain value: %s\n", val);
                 return -1;
             }
+        } else if (strcmp(arg, "--mp4") == 0) {
+            pArgs->mp4 = argv[++n];
         } else if (strcmp(arg, "--output-format") == 0) {
             val = argv[++n];
             if (strcmp(val, "csv") == 0) {
@@ -319,6 +331,8 @@ static int parseCmdArgs(int argc, char *argv[], CmdArgs *pArgs)
             }
         } else if (strcmp(arg, "--province") == 0) {
             pArgs->province = argv[++n];
+        } else if (strcmp(arg, "--shiz") == 0) {
+            pArgs->shiz = argv[++n];
         } else if (strcmp(arg, "--title") == 0) {
             pArgs->title = argv[++n];
         } else if (strcmp(arg, "--units") == 0) {
@@ -535,7 +549,15 @@ static int applyMatchFilters(const RouteInfo *pInfo, const CmdArgs *pArgs)
         // Ignore this ride...
         return -1;
     }
+    if ((pArgs->mp4 != NULL) && (stristr(pInfo->vim1080, pArgs->mp4) == NULL)) {
+        // Ignore this ride...
+        return -1;
+    }
     if ((pArgs->province != NULL) && (stristr(pInfo->location, pArgs->province) == NULL)) {
+        // Ignore this ride...
+        return -1;
+    }
+    if ((pArgs->shiz != NULL) && (stristr(pInfo->shiz, pArgs->shiz) == NULL)) {
         // Ignore this ride...
         return -1;
     }
