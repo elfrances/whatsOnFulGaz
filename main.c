@@ -13,8 +13,8 @@
 #include <curl/curl.h>
 
 #include "args.h"
+#include "cJSON.h"
 #include "download.h"
-#include "json.h"
 #include "output.h"
 #include "routedb.h"
 #include "shiz.h"
@@ -628,125 +628,166 @@ typedef struct CbInfo {
     const CmdArgs *cmdArgs;
 } CbInfo;
 
-static int procRouteObj(const JsonObject *pRoute, void *arg)
+static int procRouteObj(const cJSON *routeObj, CbInfo *pInfo)
 {
-    CbInfo *pInfo = arg;
     RouteDB *pDb = pInfo->routeDb;
     const CmdArgs *pArgs = pInfo->cmdArgs;
 	RouteInfo info = {0};
+    cJSON *value = NULL;
 
-	//jsonDumpObject(pRoute);
+    // ID
+    value = cJSON_GetObjectItemCaseSensitive(routeObj, "_id");
+    if (cJSON_IsString(value)) {
+        info.id = value->valuestring;
+    }
 
-	if (jsonGetStringValue(pRoute, "_id", &info.id) != 0) {
-		fprintf(stderr, "ERROR: failed to get \"_id\" value!\n");
-		return -1;
-	}
+	// Get the "meta" object that holds the duration,
+    // distance, elevation gain, etc.
+    cJSON *metaObj = cJSON_GetObjectItemCaseSensitive(routeObj, "meta");
+    if (metaObj == NULL) {
+        const char *errStr = cJSON_GetErrorPtr();
+        if (errStr != NULL) {
+            fprintf(stderr, "ERROR: can't find 'meta' object: %s\n", errStr);
+            return -1;
+        }
+    }
 
-	if (jsonGetStringValue(pRoute, "t", &info.title) != 0) {
-		fprintf(stderr, "ERROR: failed to get \"t\" value!\n");
-		return -1;
-	}
+    // Duration in HH:MM:SS
+    value = cJSON_GetObjectItemCaseSensitive(metaObj, "dur");
+    if (cJSON_IsString(value)) {
+        info.duration = value->valuestring;
+    }
 
-	// Get the "meta" object
-	{
-		JsonObject metaObj = {0};
+    // Distance in kilometers
+    value = cJSON_GetObjectItemCaseSensitive(metaObj, "dis");
+    if (cJSON_IsString(value)) {
+        info.distance = value->valuestring;
+    }    
 
-		if (jsonFindObjByTag(pRoute, "meta", &metaObj) == 0) {
-			if (jsonGetStringValue(&metaObj, "loc", &info.location) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"meta\" value!\n");
-				return -1;
-			}
+    // Description
+    value = cJSON_GetObjectItemCaseSensitive(metaObj, "des");
+    if (cJSON_IsString(value)) {
+        info.description = value->valuestring;
+    }    
 
-			// Duration
-			if (jsonGetStringValue(&metaObj, "dur", &info.duration) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"dur\" value!\n");
-				return -1;
-			}
+    // Elevation gain in meters
+    value = cJSON_GetObjectItemCaseSensitive(metaObj, "ele");
+    if (cJSON_IsString(value)) {
+        info.elevation = value->valuestring;
+    } 
 
-			// Distance in kilometers
-            if (jsonGetStringValue(&metaObj, "dis", &info.distance) != 0) {
-                fprintf(stderr, "ERROR: failed to get \"dis\" value!\n");
-                return -1;
-            }
+    // Contributor
+    value = cJSON_GetObjectItemCaseSensitive(metaObj, "con");
+    if (cJSON_IsString(value)) {
+        info.contributor = value->valuestring;
+    } 
 
-            // Description
-            if (jsonGetStringValue(&metaObj, "des", &info.description) != 0) {
-                fprintf(stderr, "ERROR: failed to get \"des\" value!\n");
-                return -1;
-            }
+    // Toughness
+    value = cJSON_GetObjectItemCaseSensitive(metaObj, "tou");
+    if (cJSON_IsString(value)) {
+        info.toughness = value->valuestring;
+    } 
+        
+    // Categories
+    value = cJSON_GetObjectItemCaseSensitive(metaObj, "cat");
+    // TBD
 
-            // Elevation gain in meters
-			if (jsonGetStringValue(&metaObj, "ele", &info.elevation) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"ele\" value!\n");
-				return -1;
-			}
+    // Location
+    value = cJSON_GetObjectItemCaseSensitive(metaObj, "loc");
+    if (cJSON_IsString(value)) {
+        info.location = value->valuestring;
+    } 
 
-			// Contributor
-			if (jsonGetStringValue(&metaObj, "con", &info.contributor) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"con\" value!\n");
-				return -1;
-			}
-
-			// Toughness
-			if (jsonGetStringValue(&metaObj, "tou", &info.toughness) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"tou\" value!\n");
-				return -1;
-			}
-
-			// Categories
-			if (jsonGetArrayValue(&metaObj, "cat", &info.categories) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"cat\" value!\n");
-				return -1;
-			}
-
-			// Convert the duration to seconds
-			{
-			    int h, m, s;
-			    sscanf(info.duration, "%u:%u:%u", &h, &m, &s);
-			    info.time = (h * 3600) + (m * 60) + s;
-			}
-		}
-	}
+    // Convert the duration to seconds
+    {
+        int h, m, s;
+        sscanf(info.duration, "%u:%u:%u", &h, &m, &s);
+        info.time = (h * 3600) + (m * 60) + s;
+    }
 
 	// Get the "vimXXX" objects
 	{
-		JsonObject vimObj = {0};
+		cJSON *vimObj = NULL;
 
-		if (jsonFindObjByTag(pRoute, "vimMaster", &vimObj) == 0) {
-			if (jsonGetStringValue(&vimObj, "file", &info.vimMaster) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"file\" value!\n");
-				return -1;
-			}
-		}
+        // vimMaster
+        vimObj = cJSON_GetObjectItemCaseSensitive(routeObj, "vimMaster");
+        if (vimObj == NULL) {
+            const char *errStr = cJSON_GetErrorPtr();
+            if (errStr != NULL) {
+                fprintf(stderr, "ERROR: can't find 'vimMaster' object: %s\n", errStr);
+                return -1;
+            }
+        }
+        value = cJSON_GetObjectItemCaseSensitive(vimObj, "file");
+        if (cJSON_IsString(value)) {
+            info.vimMaster = value->valuestring;
+        }  
+        
+        // vim1080
+        vimObj = cJSON_GetObjectItemCaseSensitive(routeObj, "vim1080");
+        if (vimObj == NULL) {
+            const char *errStr = cJSON_GetErrorPtr();
+            if (errStr != NULL) {
+                fprintf(stderr, "ERROR: can't find 'vim1080' object: %s\n", errStr);
+                return -1;
+            }
+        }
+        value = cJSON_GetObjectItemCaseSensitive(vimObj, "file");
+        if (cJSON_IsString(value)) {
+            info.vim1080 = value->valuestring;
+        } 
 
-		if (jsonFindObjByTag(pRoute, "vim1080", &vimObj) == 0) {
-			if (jsonGetStringValue(&vimObj, "file", &info.vim1080) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"file\" value!\n");
-				return -1;
-			}
-		}
-
-		if (jsonFindObjByTag(pRoute, "vim720", &vimObj) == 0) {
-			if (jsonGetStringValue(&vimObj, "file", &info.vim720) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"file\" value!\n");
-				return -1;
-			}
-		}
+        // vim720
+        vimObj = cJSON_GetObjectItemCaseSensitive(routeObj, "vim720");
+        if (vimObj == NULL) {
+            const char *errStr = cJSON_GetErrorPtr();
+            if (errStr != NULL) {
+                fprintf(stderr, "ERROR: can't find 'vim720' object: %s\n", errStr);
+                return -1;
+            }
+        }
+        value = cJSON_GetObjectItemCaseSensitive(vimObj, "file");
+        if (cJSON_IsString(value)) {
+            info.vim720 = value->valuestring;
+        } 
 	}
 
 	// Get the "a" object
-	{
-		JsonObject aObj = {0};
+    {
+        cJSON *aObj = cJSON_GetObjectItemCaseSensitive(routeObj, "a");
+        if (aObj == NULL) {
+            const char *errStr = cJSON_GetErrorPtr();
+            if (errStr != NULL) {
+                fprintf(stderr, "ERROR: can't find 'a' object: %s\n", errStr);
+                return -1;
+            }
+        }
 
-		if (jsonFindObjByTag(pRoute, "a", &aObj) == 0) {
-		    // SHIZ control file
-			if (jsonGetStringValue(&aObj, "file", &info.shiz) != 0) {
-				fprintf(stderr, "ERROR: failed to get \"file\" value!\n");
-				return -1;
-			}
-		}
-	}
+        // Get the "file" array object
+        cJSON *fileObj = cJSON_GetObjectItemCaseSensitive(aObj, "file");
+        if (fileObj == NULL) {
+            const char *errStr = cJSON_GetErrorPtr();
+            if (errStr != NULL) {
+                fprintf(stderr, "ERROR: can't find 'fileObj' object: %s\n", errStr);
+                return -1;
+            }
+        } 
+        
+        // SHIZ file
+        value = cJSON_GetArrayItem(fileObj, 0);
+        if (cJSON_IsString(value)) {
+            info.shiz = value->valuestring;
+        }
+    } 
 
+    // Title
+    value = cJSON_GetObjectItemCaseSensitive(routeObj, "t");
+    if (cJSON_IsString(value)) {
+        info.title = value->valuestring;
+    }
+
+    // Apply the match filters to decided whether or 
+    // not to pick up this route...
 	if (applyMatchFilters(&info, pArgs) == 0) {
 		RouteInfo *pRoute;
 
@@ -808,65 +849,68 @@ static void expGpxFiles(const RouteDB *pDb, const CmdArgs *pArgs)
     }
 }
 
-static int procMainObj(const JsonObject *pObj, const CmdArgs *pArgs)
+static int procMainObj(const cJSON *mainObj, const CmdArgs *pArgs)
 {
 	RouteDB routeDb;
-	char *result;
-	JsonObject data = {0};
 
 	rtDbInit(&routeDb);
-	routeDb.shizUrlPfx = "https://assets.fulgaz.com/";
 
-	if (jsonGetStringValue(pObj, "result", &result) != 0) {
-		fprintf(stderr, "ERROR: failed to get \"result\" value!\n");
-		return -1;
-	}
-
-	if (jsonGetStringValue(pObj, "prefix", &routeDb.mp4UrlPfx) != 0) {
-		fprintf(stderr, "ERROR: failed to get \"prefix\" value!\n");
-		return -1;
-	}
+    // Get the video file download URL prefix
+    cJSON *prefix = cJSON_GetObjectItemCaseSensitive(mainObj, "prefix");
+    if (cJSON_IsString(prefix)) {
+        routeDb.mp4UrlPfx = prefix->valuestring;
+    }
 
 	// Get the "data":[] array which contains all
 	// the route objects in the library.
-	if (jsonFindArrayByTag(pObj, "data", &data) == 0) {
-		// Process each route object in the "data" array ...
-	    CbInfo cbInfo = { .routeDb = &routeDb, .cmdArgs = pArgs };
-	    if (jsonArrayForEach(&data, procRouteObj, &cbInfo) != 0) {
-	        // Error already printed
-	        return -1;
-	    }
-
-		//printf("numRoutes=%d\n", routeDb.numRoutes);
-
-		// Create output file
-		if (pArgs->outFmt == csv) {
-		    printCsvOutput(&routeDb, pArgs);
-        } else if (pArgs->outFmt == html) {
-            printHttpOutput(&routeDb, pArgs);
-        } else if (pArgs->outFmt == text) {
-            printTextOutput(&routeDb, pArgs);
+    cJSON *data = cJSON_GetObjectItemCaseSensitive(mainObj, "data");
+    if (data == NULL) {
+        const char *errStr = cJSON_GetErrorPtr();
+        if (errStr != NULL) {
+            fprintf(stderr, "ERROR: can't find 'data' object: %s\n", errStr);
+            return -1;
         }
+    }
 
-        // If requested, download the SHIZ control files
-        if (pArgs->getShiz || pArgs->expGpx) {
-            getShizFiles(&routeDb, pArgs);
+    // Process each route object in the "data" array ...
+    CbInfo cbInfo = { .routeDb = &routeDb, .cmdArgs = pArgs };
+    cJSON *routeObj = NULL;
+    cJSON_ArrayForEach(routeObj, data) {
+        if (procRouteObj(routeObj, &cbInfo) != 0) {
+            // Spong!
+            return -1;
         }
+    }
 
-        // If requested, download the MP4 video files
-        if (pArgs->getVideo) {
-            getVideoFiles(&routeDb, pArgs);
-        }
+    //printf("numRoutes=%d\n", routeDb.numRoutes);
 
-        // If requested, export the GPX files
-        if (pArgs->expGpx) {
-            expGpxFiles(&routeDb, pArgs);
-        }
+    // Create output file
+    if (pArgs->outFmt == csv) {
+        printCsvOutput(&routeDb, pArgs);
+    } else if (pArgs->outFmt == html) {
+        printHttpOutput(&routeDb, pArgs);
+    } else if (pArgs->outFmt == text) {
+        printTextOutput(&routeDb, pArgs);
+    }
 
-        if (pArgs->dryRun) {
-            printf("TOTAL DOWNLOAD SIZE: %s\n", fmtContentLength(totalContentLength));
-        }
-	}
+    // If requested, download the SHIZ control files
+    if (pArgs->getShiz || pArgs->expGpx) {
+        getShizFiles(&routeDb, pArgs);
+    }
+
+    // If requested, download the MP4 video files
+    if (pArgs->getVideo) {
+        getVideoFiles(&routeDb, pArgs);
+    }
+
+    // If requested, export the GPX files
+    if (pArgs->expGpx) {
+        expGpxFiles(&routeDb, pArgs);
+    }
+
+    if (pArgs->dryRun) {
+        printf("TOTAL DOWNLOAD SIZE: %s\n", fmtContentLength(totalContentLength));
+    }
 
 	return 0;
 }
@@ -881,7 +925,6 @@ int main(int argc, char *argv[])
         char *data;
         size_t dataLen;
 	} inFile = {0};
-    JsonObject mainObj = {0};
 
     // Parse the command-line arguments
     if (parseCmdArgs(argc, argv, &cmdArgs) != 0) {
@@ -891,6 +934,11 @@ int main(int argc, char *argv[])
 
     // Figure out the OS type
     osTyp = getOsType();
+
+	if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+        fprintf(stderr, "ERROR: can't init CURL library!\n");
+        return -1;
+	}
 
     if ((inFile.filePath = cmdArgs.inFile) == NULL) {
         char *appInstDir;
@@ -945,29 +993,30 @@ int main(int argc, char *argv[])
 
         if (read(fd, inFile.data, inFile.dataLen) != inFile.dataLen) {
             fprintf(stderr, "ERROR: can't read data (%s)\n", strerror(errno));
+            free(inFile.data);
             return -1;
         }
 
         close(fd);
     }
 
-    // Locate the main JSON object
-	if (jsonFindObject(inFile.data, inFile.dataLen, &mainObj) != 0) {
-		fprintf(stderr, "ERROR: can't find main JSON object!\n");
-		return -1;
-	}
-
-	//jsonDumpObject(&mainObj);
-
-	if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
-        fprintf(stderr, "ERROR: can't init CURL library!\n");
-        return -1;
-	}
+    // Parse the JSON data
+    cJSON *mainObj = cJSON_ParseWithLength(inFile.data, inFile.dataLen);
+    if (mainObj == NULL) {
+        const char *errStr = cJSON_GetErrorPtr();
+        if (errStr != NULL) {
+            fprintf(stderr, "ERROR: can't parse JSON data: %s\n", errStr);
+            free(inFile.data);
+            return -1;
+        }
+    }
 
 	// Process the main JSON object
-	procMainObj(&mainObj, &cmdArgs);
+	procMainObj(mainObj, &cmdArgs);
 
 	curl_global_cleanup();
+
+    cJSON_Delete(mainObj);
 
     free(inFile.data);
 

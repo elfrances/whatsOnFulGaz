@@ -8,6 +8,7 @@ int rtDbInit(RouteDB *rtDb)
 {
     memset(rtDb, 0, sizeof (RouteDB));
     TAILQ_INIT(&rtDb->routeList);
+    rtDb->shizUrlPfx = "https://assets.fulgaz.com/";    // default
     return 0;
 }
 

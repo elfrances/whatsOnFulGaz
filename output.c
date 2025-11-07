@@ -107,43 +107,6 @@ static char *fmtProvince(const char *location)
     return fmtBuf;
 }
 
-static void remChar(char *n, char *s, char c)
-{
-    while (*s) {                            
-        if (*s != c)
-            *n++ = *s;
-        s++;          
-    }
-    *n = '\0';                             
-}
-
-static void repChar(char *n, char *s, char c, char nc)
-{
-    while (*s) {                            
-        if (*s == c) {                       
-            *n++ = nc;
-            s++;
-        }
-        else {
-            *n++ = *s++;
-        }                      
-    }
-    *n = '\0';                             
-}
-
-// Format categories as Hilly/Long/New/etc
-static char *fmtCategories(const char *categories)
-{
-    static char fmtBuf[128];
-
-    snprintf(fmtBuf, sizeof (fmtBuf), "%s", categories);
-    remChar(fmtBuf, fmtBuf, '[');
-    remChar(fmtBuf, fmtBuf, ']');
-    remChar(fmtBuf, fmtBuf, '"');
-    repChar(fmtBuf, fmtBuf, ',', '/');
-    return fmtBuf;
-}
-
 // Format distance
 static char *fmtDistance(const char *distance, Units units)
 {
@@ -193,7 +156,7 @@ typedef enum CellName {
     country,
     provinceState,
     contributor,
-    categories,
+    //categories,
     description,
     distance,
     elevationGain,
@@ -210,7 +173,7 @@ static const char *cellName[] = {
         [country] = "Country",
         [provinceState] = "Province/State",
         [contributor] = "Contributor",
-        [categories] = "Categories",
+        //[categories] = "Categories",
         [description] = "Description",
         [distance] = "Distance",
         [elevationGain] = "Elevation Gain",
@@ -248,7 +211,7 @@ void printCsvOutput(const RouteDB *pDb, const CmdArgs *pArgs)
         printf("%s,", fmtCountry(pRoute->location));
         printf("%s,", fmtProvince(pRoute->location));
         printf("%s,", pRoute->contributor);
-        printf("%s,", fmtCategories(pRoute->categories));
+        //printf("%s,", fmtCategories(pRoute->categories));
         printf("%s,", fmtDistance(pRoute->distance, pArgs->units));
         printf("%s,", fmtElevGain(pRoute->elevation, pArgs->units));
         printf("%s,", fmtTime(pRoute->time));
@@ -313,7 +276,7 @@ void printHttpOutput(const RouteDB *pDb, const CmdArgs *pArgs)
         printStringCellValue(fmtCountry(pRoute->location), 0);
         printStringCellValue(fmtProvince(pRoute->location), 0);
         printStringCellValue(pRoute->contributor, 0);
-        printStringCellValue(fmtCategories(pRoute->categories), 0);
+        //printStringCellValue(fmtCategories(pRoute->categories), 0);
         printStringCellValue(pRoute->description, 0);
         printStringCellValue(fmtDistance(pRoute->distance, pArgs->units), 0);
         printStringCellValue(fmtElevGain(pRoute->elevation, pArgs->units), 0);
@@ -345,7 +308,7 @@ void printTextOutput(const RouteDB *pDb, const CmdArgs *pArgs)
         printf("    Country:         %s\n", fmtCountry(pRoute->location));
         printf("    Province/State:  %s\n", fmtProvince(pRoute->location));
         printf("    Contributor:     %s\n", pRoute->contributor);
-        printf("    Categories:      %s\n", fmtCategories(pRoute->categories));
+        //printf("    Categories:      %s\n", fmtCategories(pRoute->categories));
         printf("    Description:     %s\n", pRoute->description);
         printf("    Distance:        %s %s\n", fmtDistance(pRoute->distance, pArgs->units), (pArgs->units == metric) ? "km" : "mi");
         printf("    Elevation Gain:  %s %s\n", fmtElevGain(pRoute->elevation, pArgs->units), (pArgs->units == metric) ? "m" : "ft");

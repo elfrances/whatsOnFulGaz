@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #include "args.h"
-#include "json.h"
+#include "cJSON.h"
 #include "shiz.h"
 
 // GPS Track Point
@@ -38,22 +38,6 @@ typedef struct GpsTrk {
     double startTime;
     double endTime;
 } GpsTrk;
-
-static const char *fmtTrkPtObj(const JsonObject *pObj)
-{
-#define FMT_BUF_LEN 1024
-    static char fmtBuf[FMT_BUF_LEN];
-    const char *sp = pObj->start;
-    char *dp = fmtBuf;
-
-    for (int n = 0; (sp <= pObj->end) && (n <= (FMT_BUF_LEN - 2)); n++) {
-        *dp++ = *sp++;
-    }
-
-    *dp = '\0';
-
-    return fmtBuf;
-}
 
 static TrkPt *trkPtNew(int index)
 {
@@ -160,13 +144,11 @@ static int createGpxFile(const char *title, const char *shizPath, const GpsTrk *
     return 0;
 }
 
-static int procTrkPtObj(const JsonObject *pObj, void *arg)
+static int procShizTrkPtObj(GpsTrk *pTrk, const cJSON *trackPoint)
 {
-    GpsTrk *pTrk = arg;
+    int index = pTrk->numTrkPts;
     TrkPt *pTrkPt;
-    time_t time;
-
-    //printf("trkpt: %s\n", fmtTrkPtObj(pObj));
+    cJSON *value;
 
     // Alloc new TrkPt object
     if ((pTrkPt = trkPtNew(pTrk->numTrkPts++)) == NULL) {
@@ -180,62 +162,51 @@ static int procTrkPtObj(const JsonObject *pObj, void *arg)
     //
     // {"-lon":"5.280152","-lat":"44.174612","speed":"13.9","ele":"1876.6","distance":"20.719","bearing":"239.8","slope":"6.2","time":"02:03:59","index":7439}
     //
-    // In some shiz files the numeric values are not strings but actual
-    // integer/float numbers, so we allow for either format...
+    // NOTE: when reading floating point metrics, allow for both JSON
+    // encodings: string or raw floating point, as some "weird" shiz
+    // files sometimes use BOTH formats... Geez!
 
-    if ((jsonGetStrDoubleValue(pObj, "-lon", &pTrkPt->longitude) != 0) &&
-        (jsonGetDoubleValue(pObj, "-lon", &pTrkPt->longitude) != 0)) {
-        fprintf(stderr, "ERROR: Can't get longitude value: %s\n", fmtTrkPtObj(pObj));
-        return -1;
+    // Longitude [decimal degrees]
+    value = cJSON_GetObjectItemCaseSensitive(trackPoint, "-lon");
+    if (cJSON_IsString(value)) {
+        pTrkPt->longitude = atof(value->valuestring);
+    } else if (cJSON_IsNumber(value)) {
+        pTrkPt->longitude = value->valuedouble;
     }
 
-    if ((jsonGetStrDoubleValue(pObj, "-lat", &pTrkPt->latitude) != 0) &&
-        (jsonGetDoubleValue(pObj, "-lat", &pTrkPt->latitude) != 0)) {
-        fprintf(stderr, "ERROR: Can't get latitude value: %s\n", fmtTrkPtObj(pObj));
-        return -1;
+    // Latitude [decimal degrees]
+    value = cJSON_GetObjectItemCaseSensitive(trackPoint, "-lat");
+    if (cJSON_IsString(value)) {
+        pTrkPt->latitude = atof(value->valuestring);
+    } else if (cJSON_IsNumber(value)) {
+        pTrkPt->latitude = value->valuedouble;
     }
 
-    if ((jsonGetStrDoubleValue(pObj, "speed", &pTrkPt->speed) != 0) &&
-        (jsonGetDoubleValue(pObj, "speed", &pTrkPt->speed) != 0)) {
-        fprintf(stderr, "ERROR: Can't get speed value: %s\n", fmtTrkPtObj(pObj));
-        return -1;
+    // Elevation [m]
+    value = cJSON_GetObjectItemCaseSensitive(trackPoint, "ele");
+    if (cJSON_IsString(value)) {
+        pTrkPt->elevation = atof(value->valuestring);
+    } else if (cJSON_IsNumber(value)) {
+        pTrkPt->elevation = value->valuedouble;
     }
 
-    if ((jsonGetStrDoubleValue(pObj, "ele", &pTrkPt->elevation) != 0) &&
-        (jsonGetDoubleValue(pObj, "ele", &pTrkPt->elevation) != 0)) {
-        fprintf(stderr, "ERROR: Can't get elevation value: %s\n", fmtTrkPtObj(pObj));
-        return -1;
+        // Distance [km]
+    value = cJSON_GetObjectItemCaseSensitive(trackPoint, "distance");
+    if (cJSON_IsString(value)) {
+        pTrkPt->distance = atof(value->valuestring);
+    } else if (cJSON_IsNumber(value)) {
+        pTrkPt->distance = value->valuedouble;
     }
 
-    if ((jsonGetStrDoubleValue(pObj, "distance", &pTrkPt->distance) != 0) &&
-        (jsonGetDoubleValue(pObj, "distance", &pTrkPt->distance) != 0)) {
-        fprintf(stderr, "ERROR: Can't get distance value: %s\n", fmtTrkPtObj(pObj));
-        return -1;
-    }
-
-    if ((jsonGetStrDoubleValue(pObj, "bearing", &pTrkPt->bearing) != 0) &&
-        (jsonGetDoubleValue(pObj, "bearing", &pTrkPt->bearing) != 0)) {
-        fprintf(stderr, "ERROR: Can't get bearing value: %s\n", fmtTrkPtObj(pObj));
-        return -1;
-    }
-
-    if ((jsonGetStrDoubleValue(pObj, "slope", &pTrkPt->grade) != 0) &&
-        (jsonGetDoubleValue(pObj, "slope", &pTrkPt->grade) != 0)) {
-        fprintf(stderr, "ERROR: Can't get slope value: %s\n", fmtTrkPtObj(pObj));
-        return -1;
-    }
-
-    if (jsonGetStrTimeValue(pObj, "time", &time) != 0) {
-        fprintf(stderr, "ERROR: Can't get time value: %s\n", fmtTrkPtObj(pObj));
-        return -1;
-    }
-
-    pTrkPt->timestamp = time;
+    pTrkPt->timestamp = pTrk->startTime + index;
     pTrkPt->distance *= 1000.0; // convert from km to m
-    pTrkPt->speed *= 0.277778;  // convert from km/h to m/s
+    pTrkPt->speed /= 3.6;       // convert from km/h to m/s
 
     // Insert track point at the tail of the queue
     TAILQ_INSERT_TAIL(&pTrk->trkPtList, pTrkPt, tqEntry);
+
+    // Adjust the activity metrics to this point
+    pTrk->endTime = pTrkPt->timestamp;
 
     return 0;
 }
@@ -285,30 +256,83 @@ static GpsTrk *parseShizFile(const char *filePath)
 {
     InFile inFile = { .filePath = filePath };
     GpsTrk *pTrk = NULL;
-    JsonObject mainObj = {0};
-    JsonObject trkpt = {0};
 
     if (readInFile(&inFile) != 0) {
         // Error message already printed
         return NULL;
     }
 
-    // Locate the main JSON object
-    //if (jsonFindObject(inFile.data, inFile.dataLen, &mainObj) != 0) {
-    //    fprintf(stderr, "ERROR: can't find main JSON object!\n");
-    //    free(inFile.data);
-    //    return NULL;
-    //}
+    // The general format of a shiz file is as follows:
+    //
+    // {
+    //     "extra":{ .... },
+    //     "gpx":{
+    //         "trk":{
+    //             "trkseg":{
+    //                 "trkpt":[
+    //                     { ... },
+    //                     { ... },
+    //                        .
+    //                        .
+    //                     { ... }
+    //                 ]
+    //             }
+    //         }
+    //     },
+    //     "seg":[
+    //         { ... },
+    //         { ... },
+    //            .
+    //            .
+    //         { ... },
+    //     ]
+    // }
+    //
+    //
 
-    mainObj.start = inFile.data;
-    mainObj.end = mainObj.start + inFile.dataLen - 1;
+    cJSON *shizObj = cJSON_ParseWithLength(inFile.data, inFile.dataLen);
+    if (shizObj == NULL) {
+        const char *errStr = cJSON_GetErrorPtr();
+        if (errStr != NULL) {
+            fprintf(stderr, "ERROR: can't parse JSON data: %s\n", errStr);
+            return NULL;
+        }
+    }
 
-    // Get the "trkpt" array which contains all
-    // the trackpoint objects.
-    if (jsonFindArrayByTag(&mainObj, "trkpt", &trkpt) != 0) {
-        fprintf(stderr, "ERROR: can't find \"trkpt\" array object!\n");
-        free(inFile.data);
-        return NULL;
+    cJSON *gpx = cJSON_GetObjectItemCaseSensitive(shizObj, "gpx");
+    if (gpx == NULL) {
+        const char *errStr = cJSON_GetErrorPtr();
+        if (errStr != NULL) {
+            fprintf(stderr, "ERROR: can't find 'gpx' object: %s\n", errStr);
+            return NULL;
+        }
+    }
+
+    cJSON *trk = cJSON_GetObjectItemCaseSensitive(gpx, "trk");
+    if (trk == NULL) {
+        const char *errStr = cJSON_GetErrorPtr();
+        if (errStr != NULL) {
+            fprintf(stderr, "ERROR: can't find 'trk' object: %s\n", errStr);
+            return NULL;
+        }
+    }
+
+    cJSON *trkSeg = cJSON_GetObjectItemCaseSensitive(trk, "trkseg");
+    if (trkSeg == NULL) {
+        const char *errStr = cJSON_GetErrorPtr();
+        if (errStr != NULL) {
+            fprintf(stderr, "ERROR: can't find 'trkseg' object: %s\n", errStr);
+            return NULL;
+        }
+    }
+
+    cJSON *trackPoints = cJSON_GetObjectItemCaseSensitive(trkSeg, "trkpt");
+    if (trackPoints == NULL) {
+        const char *errStr = cJSON_GetErrorPtr();
+        if (errStr != NULL) {
+            fprintf(stderr, "ERROR: can't find 'trkseg' object: %s\n", errStr);
+            return NULL;
+        }
     }
 
     if ((pTrk = gpsTrkNew()) == NULL) {
@@ -317,12 +341,16 @@ static GpsTrk *parseShizFile(const char *filePath)
         return NULL;
     }
 
-    //jsonDumpObject(&trkpt);
+    cJSON *trackPoint = NULL;
+    cJSON_ArrayForEach(trackPoint, trackPoints) {
+        if (procShizTrkPtObj(pTrk, trackPoint) != 0) {
+            // Spong!
+            return NULL;
+        }
+    }
 
-    // Process each entry in the "trkpt" array ...
-    jsonArrayForEach(&trkpt, procTrkPtObj, pTrk);
+    cJSON_Delete(shizObj);
 
-    // We don't need this anymore ...
     free(inFile.data);
 
     return pTrk;
@@ -345,7 +373,4 @@ int shizToGpx(const char *title, const char *filePath)
 
     return 0;
 }
-
-
-
 
