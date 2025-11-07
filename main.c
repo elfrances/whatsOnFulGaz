@@ -34,56 +34,56 @@ typedef struct AllRidesFile {
  * following structure:
  *
  * {
- * 		"_id":"f1b5ca99119ffe68fbe6f0fa",
- * 		"appId":"55f780c682d4002ba4cc479077db57a400cbe240",
- * 		"vim1080":{
- * 			"file":"1080P/Col_de_Vars.mp4",
- * 			"sha":"25e786e7a89ebbe330ebabbc6e8ba499957a4a013781332363adbba55e2f2044"
- * 		},
- * 		"vim720":{
- * 			"file":"720P/Col_de_Vars.mp4",
- * 			"sha":"68faac82299ec6097b4a6d22c0cff3efecbcc9d7c4397250b0f8e4d062a1ba9d"
- * 		},
- * 		"meta":{
- * 			"country":"all",
- * 			"dur":"1:08:21",
- * 			"dis":"15.26",
- * 			"des":"A relatively easy 5% start, although on very hot south-facing slopes, with the toughest sections at more than 10% in the second half.  Filmed on the 2017 �tape du Tour.  Used on stage 18 of the 2017 Tour de France, the first rider over the summit at 2100m was Alexey Lutsenko (Astana) from Kazakhstan",
- * 			"cat":["Hilly"],
- * 			"ele":"682",
- * 			"tou":"473",
- * 			"loc":"Hautes-Alpes/Alpes-de-Haute-Provence, France",
- * 			"con":"Franck Villano",
- * 			"ter":""
- * 		},
- * 		"compType":"single",
- * 		"vimMaster":{
- * 			"file":""
- * 		},
- * 		"views":173,
- * 		"hls":"https://fulgazhls.cachefly.net/file/fulgaz-videos/,1080P,720P,/Col_de_Vars.mp4.cf/master.m3u8",
- * 		"avatarMode":0,
- * 		"forceDownload":false,
- * 		"product":"fulgaz",
- * 		"workoutURL":"",
- * 		"a":{
- * 			"image":["Col_de_Vars.jpg"],
- * 			"file":["Col_de_Vars-seg.shiz"]
- * 		},
- * 		"u":1517239331176,
- * 		"loc":{
- * 			"lat":44.509897,
- * 			"lon":6.746794
- * 		},
- * 		"t":"�tape du Tour 2017 - Col de Vars from Saint-Paul-sur-Ubaye "
+ *         "_id":"f1b5ca99119ffe68fbe6f0fa",
+ *         "appId":"55f780c682d4002ba4cc479077db57a400cbe240",
+ *         "vim1080":{
+ *             "file":"1080P/Col_de_Vars.mp4",
+ *             "sha":"25e786e7a89ebbe330ebabbc6e8ba499957a4a013781332363adbba55e2f2044"
+ *         },
+ *         "vim720":{
+ *             "file":"720P/Col_de_Vars.mp4",
+ *             "sha":"68faac82299ec6097b4a6d22c0cff3efecbcc9d7c4397250b0f8e4d062a1ba9d"
+ *         },
+ *         "meta":{
+ *             "country":"all",
+ *             "dur":"1:08:21",
+ *             "dis":"15.26",
+ *             "des":"A relatively easy 5% start, although on very hot south-facing slopes, with the toughest sections at more than 10% in the second half.  Filmed on the 2017 �tape du Tour.  Used on stage 18 of the 2017 Tour de France, the first rider over the summit at 2100m was Alexey Lutsenko (Astana) from Kazakhstan",
+ *             "cat":["Hilly"],
+ *             "ele":"682",
+ *             "tou":"473",
+ *             "loc":"Hautes-Alpes/Alpes-de-Haute-Provence, France",
+ *             "con":"Franck Villano",
+ *             "ter":""
+ *         },
+ *         "compType":"single",
+ *         "vimMaster":{
+ *             "file":""
+ *         },
+ *         "views":173,
+ *         "hls":"https://fulgazhls.cachefly.net/file/fulgaz-videos/,1080P,720P,/Col_de_Vars.mp4.cf/master.m3u8",
+ *         "avatarMode":0,
+ *         "forceDownload":false,
+ *         "product":"fulgaz",
+ *         "workoutURL":"",
+ *         "a":{
+ *             "image":["Col_de_Vars.jpg"],
+ *             "file":["Col_de_Vars-seg.shiz"]
+ *         },
+ *         "u":1517239331176,
+ *         "loc":{
+ *             "lat":44.509897,
+ *             "lon":6.746794
+ *         },
+ *         "t":"�tape du Tour 2017 - Col de Vars from Saint-Paul-sur-Ubaye "
  * }
  *
  * File structure:
  *
  * {
- * 	    "result":"success",
- *  	"prefix":"https://fulgaz.cachefly.net/file/fulgaz-videos/",
- *  	"data":[<rec1>,<rec2>,...<recN>]
+ *         "result":"success",
+ *      "prefix":"https://fulgaz.cachefly.net/file/fulgaz-videos/",
+ *      "data":[<rec1>,<rec2>,...<recN>]
  * }
  *
  */
@@ -632,7 +632,7 @@ static int procRouteObj(const cJSON *routeObj, CbInfo *pInfo)
 {
     RouteDB *pDb = pInfo->routeDb;
     const CmdArgs *pArgs = pInfo->cmdArgs;
-	RouteInfo info = {0};
+    RouteInfo info = {0};
     cJSON *value = NULL;
 
     // ID
@@ -641,7 +641,7 @@ static int procRouteObj(const cJSON *routeObj, CbInfo *pInfo)
         info.id = value->valuestring;
     }
 
-	// Get the "meta" object that holds the duration,
+    // Get the "meta" object that holds the duration,
     // distance, elevation gain, etc.
     cJSON *metaObj = cJSON_GetObjectItemCaseSensitive(routeObj, "meta");
     if (metaObj == NULL) {
@@ -705,9 +705,9 @@ static int procRouteObj(const cJSON *routeObj, CbInfo *pInfo)
         info.time = (h * 3600) + (m * 60) + s;
     }
 
-	// Get the "vimXXX" objects
-	{
-		cJSON *vimObj = NULL;
+    // Get the "vimXXX" objects
+    {
+        cJSON *vimObj = NULL;
 
         // vimMaster
         vimObj = cJSON_GetObjectItemCaseSensitive(routeObj, "vimMaster");
@@ -750,9 +750,9 @@ static int procRouteObj(const cJSON *routeObj, CbInfo *pInfo)
         if (cJSON_IsString(value)) {
             info.vim720 = value->valuestring;
         } 
-	}
+    }
 
-	// Get the "a" object
+    // Get the "a" object
     {
         cJSON *aObj = cJSON_GetObjectItemCaseSensitive(routeObj, "a");
         if (aObj == NULL) {
@@ -788,26 +788,26 @@ static int procRouteObj(const cJSON *routeObj, CbInfo *pInfo)
 
     // Apply the match filters to decided whether or 
     // not to pick up this route...
-	if (applyMatchFilters(&info, pArgs) == 0) {
-		RouteInfo *pRoute;
+    if (applyMatchFilters(&info, pArgs) == 0) {
+        RouteInfo *pRoute;
 
-		// Clean up the description string
-		cleanUpDescription(info.description);
+        // Clean up the description string
+        cleanUpDescription(info.description);
 
-		if ((pRoute = malloc(sizeof (RouteInfo))) == NULL) {
-			fprintf(stderr, "ERROR: failed to alloc route record!\n");
-			return -1;
-		}
+        if ((pRoute = malloc(sizeof (RouteInfo))) == NULL) {
+            fprintf(stderr, "ERROR: failed to alloc route record!\n");
+            return -1;
+        }
 
-		*pRoute = info;
+        *pRoute = info;
 
-		// Add entry to the DB
-		TAILQ_INSERT_TAIL(&pDb->routeList, pRoute, tqEntry);
+        // Add entry to the DB
+        TAILQ_INSERT_TAIL(&pDb->routeList, pRoute, tqEntry);
 
-		pDb->numRoutes++;
-	}
+        pDb->numRoutes++;
+    }
 
-	return 0;
+    return 0;
 }
 
 static void getShizFiles(const RouteDB *pDb, const CmdArgs *pArgs)
@@ -851,9 +851,9 @@ static void expGpxFiles(const RouteDB *pDb, const CmdArgs *pArgs)
 
 static int procMainObj(const cJSON *mainObj, const CmdArgs *pArgs)
 {
-	RouteDB routeDb;
+    RouteDB routeDb;
 
-	rtDbInit(&routeDb);
+    rtDbInit(&routeDb);
 
     // Get the video file download URL prefix
     cJSON *prefix = cJSON_GetObjectItemCaseSensitive(mainObj, "prefix");
@@ -861,8 +861,8 @@ static int procMainObj(const cJSON *mainObj, const CmdArgs *pArgs)
         routeDb.mp4UrlPfx = prefix->valuestring;
     }
 
-	// Get the "data":[] array which contains all
-	// the route objects in the library.
+    // Get the "data":[] array which contains all
+    // the route objects in the library.
     cJSON *data = cJSON_GetObjectItemCaseSensitive(mainObj, "data");
     if (data == NULL) {
         const char *errStr = cJSON_GetErrorPtr();
@@ -912,7 +912,7 @@ static int procMainObj(const cJSON *mainObj, const CmdArgs *pArgs)
         printf("TOTAL DOWNLOAD SIZE: %s\n", fmtContentLength(totalContentLength));
     }
 
-	return 0;
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -920,11 +920,11 @@ int main(int argc, char *argv[])
     CmdArgs cmdArgs = {0};
     OsTyp osTyp = unk;
     AllRidesFile allRides = {0};
-	struct InFile {
+    struct InFile {
         const char *filePath;
         char *data;
         size_t dataLen;
-	} inFile = {0};
+    } inFile = {0};
 
     // Parse the command-line arguments
     if (parseCmdArgs(argc, argv, &cmdArgs) != 0) {
@@ -935,10 +935,10 @@ int main(int argc, char *argv[])
     // Figure out the OS type
     osTyp = getOsType();
 
-	if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+    if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
         fprintf(stderr, "ERROR: can't init CURL library!\n");
         return -1;
-	}
+    }
 
     if ((inFile.filePath = cmdArgs.inFile) == NULL) {
         char *appInstDir;
@@ -1011,10 +1011,10 @@ int main(int argc, char *argv[])
         }
     }
 
-	// Process the main JSON object
-	procMainObj(mainObj, &cmdArgs);
+    // Process the main JSON object
+    procMainObj(mainObj, &cmdArgs);
 
-	curl_global_cleanup();
+    curl_global_cleanup();
 
     cJSON_Delete(mainObj);
 
